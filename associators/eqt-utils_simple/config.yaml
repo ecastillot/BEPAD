@@ -1,0 +1,5 @@
+# Same defaults as EQTransformer's run_associator.
+moving_window_s: 15.0     # fixed, non-overlapping windows [s]
+pair_n: 3                 # minimum stations for an event
+depth_km: 5.0             # fixed depth given to every event
+max_sp_s: 60.0            # BEPAD adaptation: longest S-P time when pairing a P and an S into one detection [s]

@@ -1,0 +1,35 @@
+<div class="bepad-lb">
+<label>Release <select class="bepad-lb-release"></select></label>
+<label>Networks <select class="bepad-lb-view"></select></label>
+<table class="docutils"><thead><tr><th>#</th><th>Method</th><th>Type</th><th>Training</th><th>Event F1</th><th>Pick F1</th><th>Noise rej.</th><th>Merge</th><th>Split</th><th>Epicentre err. (km)</th><th>Depth err. (km)</th><th>s/window</th><th>Windows</th><th>Networks</th></tr></thead><tbody></tbody></table>
+</div>
+<script>
+(function () {
+  const DATA = {"dev": {"core": {"title": "BEPAD-10 test (CM, R05, R06, R08, TUN, tx)", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.462", "0.253", "0.028", "0.510", "0.418", "757.0", "32.1", "0.19", "675", "6/6"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "all": {"title": "All networks", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.462", "0.253", "0.028", "0.510", "0.418", "757.0", "32.1", "0.19", "675", "6/6"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "CM": {"title": "CM", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.678", "0.330", "0.026", "0.348", "0.598", "184.0", "119.1", "0.19", "115", "1/1"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "R05": {"title": "R05", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.237", "0.125", "0.000", "0.895", "0.000", "1.8", "2.5", "0.19", "105", "1/1"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "R06": {"title": "R06", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.325", "0.185", "0.000", "0.873", "0.202", "6.9", "0.5", "0.19", "110", "1/1"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "R08": {"title": "R08", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.227", "0.193", "0.051", "0.144", "0.764", "4130.2", "64.0", "0.19", "115", "1/1"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "TUN": {"title": "TUN", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.615", "0.315", "0.091", "0.232", "0.203", "103.5", "5.0", "0.19", "115", "1/1"], "link": "https://github.com/smousavi05/EQTransformer"}]}, "tx": {"title": "tx", "rows": [{"cells": ["1", "eqt-utils_simple 0.1", "classical", "none", "0.689", "0.370", "0.001", "0.568", "0.739", "115.4", "1.8", "0.19", "115", "1/1"], "link": "https://github.com/smousavi05/EQTransformer"}]}}};
+  const box = document.currentScript.previousElementSibling;
+  const rel = box.querySelector(".bepad-lb-release"), view = box.querySelector(".bepad-lb-view");
+  const body = box.querySelector("tbody");
+  const opt = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; return o; };
+  function fillViews() {
+    view.innerHTML = "";
+    for (const [v, d] of Object.entries(DATA[rel.value])) view.appendChild(opt(v, d.title));
+  }
+  function draw() {
+    body.innerHTML = "";
+    for (const r of DATA[rel.value][view.value].rows) {
+      const tr = document.createElement("tr");
+      r.cells.forEach((c, i) => {
+        const td = document.createElement("td");
+        if (i === 1 && r.link) { const a = document.createElement("a"); a.href = r.link; a.textContent = c; td.appendChild(a); }
+        else td.textContent = c;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    }
+  }
+  Object.keys(DATA).sort().reverse().forEach(k => rel.appendChild(opt(k, k)));
+  rel.onchange = () => { fillViews(); draw(); };
+  view.onchange = draw;
+  fillViews(); draw();
+})();
+</script>

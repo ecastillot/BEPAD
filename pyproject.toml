@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bepad"
+version = "0.1.0"
+description = "BEPAD: a benchmark dataset for seismic phase association built from UTDQuake"
+readme = "README.md"
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas>=2.0",
+    "pyarrow",
+    "scipy",
+    "pyyaml",
+    "matplotlib",
+    "huggingface_hub",
+]
+
+[project.urls]
+Repository = "https://github.com/ecastillot/BEPAD"
+Dataset = "https://huggingface.co/datasets/ecastillot/BEPAD"
+
+[project.scripts]
+bepad = "bepad.__main__:main"
+
+[project.optional-dependencies]
+dl = ["torch>=2.1"]                       # bepad.torch (PyTorch datasets)
+baselines = ["pyocto"]                    # examples/pyocto_baseline.py
+build = ["utdquake>=1.0.1"]               # building the dataset (maintainers)
+docs = ["sphinx>=7", "sphinx-rtd-theme", "myst-parser", "sphinx-copybutton"]
+
+[tool.setuptools.packages.find]
+include = ["bepad*"]

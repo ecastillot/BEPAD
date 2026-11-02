@@ -1,0 +1,23 @@
+# data (pool and releases are rebuilt from UTDQuake + configs; publish via Hugging Face)
+data/*
+!data/.gitkeep
+
+# test outputs
+test/**/*.out
+test/**/logs/
+test/**/*.parquet
+
+# Python
+__pycache__/
+*.py[codz]
+*.egg-info/
+/build/
+docs/_build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints
+.venv
+.env
+
+# local runs of associators
+results/

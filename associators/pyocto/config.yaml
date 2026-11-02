@@ -1,0 +1,15 @@
+# Generic, untuned settings (the same for every network). Tune them on the val split.
+p_velocity: 6.4          # km/s
+s_velocity: 3.6          # km/s
+tolerance: 2.0           # s
+margin_deg: 1.0          # search area = stations with picks + this margin
+zlim_km: [0, 200]
+time_before_s: 300.0
+n_picks: 4               # BEPAD scores events with >= 4 picks on >= 3 stations
+n_p_picks: 2
+n_s_picks: 0
+n_p_and_s_picks: 0
+
+# Settings for some networks would go here, overriding the ones above, e.g.
+# networks:
+#   tx: {p_velocity: 6.0, s_velocity: 3.5}

@@ -1,0 +1,31 @@
+# Conda environment for BEPAD
+#   conda env create -f environment.yml
+#   conda activate bepad
+#   pip install -e ".[dl,baselines,docs]"      # from the repo root; pick the extras you need
+#
+# PyTorch is installed by pip in the step above (CPU or the default CUDA build).
+# For a specific CUDA build (e.g. cu124 on the H100/H200 nodes), install it first:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+name: bepad
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  # core (bepad)
+  - numpy
+  - pandas>=2.0
+  - pyarrow
+  - scipy
+  - pyyaml
+  - matplotlib
+  # UTDQuake and its dependencies (only needed to build the pool)
+  - obspy
+  - scikit-learn
+  - seaborn
+  - packaging
+  - datasets
+  - huggingface_hub
+  - pip:
+      - obsplus
+      - utdquake>=1.0.1

@@ -1,0 +1,9 @@
+/* Wider content and readable tables */
+.wy-nav-content { max-width: 1000px; }
+.rst-content table.docutils td, .rst-content table.docutils th { white-space: normal; }
+.rst-content table.docutils td { vertical-align: top; }
+
+/* Leaderboard filter */
+.bepad-lb label { margin-right: 1.5em; font-weight: bold; }
+.bepad-lb select { margin: 0 0 1em 0.4em; padding: 2px 4px; font-weight: normal; }
+.bepad-lb { overflow-x: auto; }

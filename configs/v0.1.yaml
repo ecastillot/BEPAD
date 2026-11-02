@@ -1,0 +1,43 @@
+# BEPAD v0.1: every UTDQuake network in the pool (1,000 / 200 / 100 windows per network and scenario),
+# UTDQuake 1.0 at the Hugging Face commit of pipeline/config.sh.
+release: v0.1
+seed_namespace: v0.1   # keep when a later release only adds networks
+data_root: data
+networks: all                # every network in the pool
+exclude_networks: []
+min_events_per_split: 20     # skip a network split with fewer pool events
+gallery_networks: [tx, CM, us]   # example networks drawn by `bepad figures`
+workers: 48
+
+# Windows per NETWORK, split AND scenario (23 scenarios)
+windows_per_scenario: {train: 1000, val: 200, test: 100}
+
+# Defaults for every scenario (see bepad/build/config.py WINDOW_DEFAULTS)
+window:
+  length_s: auto
+  length_factor: 2.0
+  event_time_neighborhood_days: 365
+  edge_event_prob: 0.3
+  generated_ratio: [0.0, 0.2]      # generated picks / real picks, drawn per window
+  noise_any_station_frac: 0.1      # rest of the noise: uniform in distance to the events
+  # every event passes the pool rule inside the window (real picks)
+  event_min_p: 4
+  event_min_s: 0
+  event_min_stations: 3
+
+# Difficulty axes. `param` is the window parameter each level sets.
+axes:
+  ev:
+    param: n_events
+    levels: {sparse: [1, 2], low: [3, 5], med: [6, 10], high: [11, 20]}
+  noise:
+    param: noise_ratio               # noise picks / true picks in the window
+    levels: {none: 0.0, low: 0.1, med: 0.3, high: 1.0, extreme: 3.0}
+
+grid: [ev, noise]                    # full cartesian product -> 20 scenarios
+
+# One-dimensional sweep over azimuthal gap (how "out of network" events are)
+extra_scenarios:
+  gap-000-090: {n_events: [3, 5], noise_ratio: 0.3, gap_range: [0, 90]}
+  gap-090-180: {n_events: [3, 5], noise_ratio: 0.3, gap_range: [90, 180]}
+  gap-180-270: {n_events: [3, 5], noise_ratio: 0.3, gap_range: [180, 270]}

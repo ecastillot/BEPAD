@@ -1,0 +1,33 @@
+# BEPAD pool: quality control, split and label model.
+# QC thresholds match hypogt test/09252026 train_strategy_a_global_v8_strict_edges_studentt.py.
+# Changing `qc` or `split` requires rebuilding every network (or a new data_root).
+data_root: data
+
+qc:
+  min_p: 4                              # P-family picks (P, Pn, Pg)
+  min_s: 0
+  min_stations: 3                       # distinct stations
+  max_gap_deg: 270.0                    # catalog azimuthal gap
+  max_depth_m: 700000.0
+  max_rms_s: 1.8                        # origin standard_error
+  max_horizontal_uncertainty_m: 200000.0
+  max_vertical_uncertainty_m: 30000.0
+  zscore_sigma: 3.0                     # per-pick |travel_time_zscore| trimming
+  keep_nan_zscore: true
+  keep_missing: true                    # a missing catalog field does not reject an event
+
+# Random split per event: sha256(salt | network | event_id). Networks are independent.
+split:
+  salt: bepad-v1                        # never change (event splits of every release depend on it)
+  fractions: {train: 0.7, val: 0.1, test: 0.2}
+  test_only_below: 200                  # a network with fewer QC'd events is test only (all its events)
+
+# Label model (python -m bepad pool fit-labels), see bepad/build/labels.py
+labels:
+  gamma: 0.5                            # prob = 0.5 + 0.5 * q(M, r) ** gamma
+  band_k: 2.0                           # band = predicted arrival +/- 2 sigma(r)
+  max_gap_frac: 0.3                     # generated picks only where real picks are <= 30% of r apart
+  sigma_floor_s: 0.05
+  active_days: 30                       # station available for an event: picked anything within +/- 30 days
+  events_per_network: 1500              # events sampled per network for the detectability fit
+  pairs_per_network: 200000
