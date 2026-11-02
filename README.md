@@ -4,7 +4,7 @@ A phase associator groups the P and S picks of a seismic network into earthquake
 thousands of association problems built from **real earthquakes and real picks**
 ([UTDQuake](https://huggingface.co/datasets/ecastillot/UTDQuake)), with the answer for every pick.
 
-![a BEPAD window](docs/figures/window_anatomy_tx.png)
+![a BEPAD window](https://raw.githubusercontent.com/ecastillot/BEPAD/main/docs/figures/window_anatomy_tx.png)
 
 *One window (Texas network): (a) earthquakes and stations, (b) every pick at its distance from
 its earthquake, (c) picks by type.*
@@ -34,7 +34,7 @@ bepad submit results/my-method --code associators/my-method    # opens a Hugging
 | **Associator authors** | fill in `bepad.Associator`, run on `test`, submit to the leaderboard — see *Contribute your associator* |
 | **Deep learning** | `bepad.torch.ReleaseWindowDataset` — see *Train a model* |
 
-Documentation: `docs/` (Read the Docs). Install: `pip install bepad` (or `pip install -e .` from
+Code: https://github.com/ecastillot/BEPAD · Data: https://huggingface.co/datasets/ecastillot/BEPAD · Documentation: `docs/` (Read the Docs). Install: `pip install bepad` (or `pip install -e .` from
 this folder; `.[dl]` for PyTorch, `.[build]` to rebuild the dataset).
 
 ## Repository
