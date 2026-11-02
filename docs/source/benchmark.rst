@@ -71,8 +71,8 @@ See where it fails
    from bepad.plots import plot_prediction
 
    worst = result.report.per_window.sort_values("ari").window_id.iloc[0]     # the hardest window
-   test = bepad.load("test", networks=["tx"])
-   plot_prediction(test[worst], result.predictions, result.locations, save_path="worst_window.png")
+   test = bepad.load("test", window_ids=[worst])
+   plot_prediction(test[0], result.predictions, result.locations, save_path="worst_window.png")
 
 With locations, a map is added (true epicentres ★ joined to the predicted ○):
 

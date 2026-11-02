@@ -2,8 +2,9 @@ import bepad
 from bepad.plots import plot_prediction
 
 # run an associator on one window, then compare it with the truth
+wid = "tx.test.ev-low__noise-med.00000"
 pyocto = bepad.load_associator("associators/pyocto")
-result = pyocto.run("test", networks=["tx"], scenarios=["ev-low__noise-med"], max_windows=1)
+result = pyocto.run("test", window_ids=[wid])
 
-test = bepad.load("test", networks=["tx"])
-plot_prediction(test["tx.test.ev-low__noise-med.00000"], result.predictions, save_path="prediction_pyocto_tx.png")
+test = bepad.load("test", window_ids=[wid])
+plot_prediction(test[0], result.predictions, save_path="prediction_pyocto_tx.png")

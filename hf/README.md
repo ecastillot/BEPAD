@@ -1,5 +1,5 @@
 ---
-license: other
+license: gpl-3.0
 pretty_name: BEPAD
 task_categories:
   - other

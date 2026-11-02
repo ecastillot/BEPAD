@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.1.1
+-----
+
+Same data (BEPAD v0.1).
+
+* ``bepad.load(..., max_windows=, scenarios=, window_ids=)``: load only some windows, with little
+  memory (only their rows are read). With ``window_ids`` alone, only their networks are downloaded.
+* ``Associator.run`` takes the same options and reads only those windows; ``max_windows`` is now
+  the same fixed random sample as in ``bepad.load`` (was: the first windows).
+* Documentation examples load a few windows; every one-window figure gives its ``window_id``.
+
 0.1.0 (BEPAD v0.1)
 ------------------
 

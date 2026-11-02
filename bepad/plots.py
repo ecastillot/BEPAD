@@ -70,6 +70,11 @@ def _finish(fig, save_path, dpi=DPI):
     return fig
 
 
+def _window_id(ax, wid):
+    """The window_id in a corner of a panel, so the window can be loaded again: bepad.load(window_ids=[...])."""
+    ax.text(0.99, 0.02, wid, transform=ax.transAxes, ha="right", va="bottom", fontsize=4.5, color=INK2)
+
+
 def _panel(ax, letter):
     ax.text(-0.02, 1.02, letter, transform=ax.transAxes, fontweight="bold", fontsize=8.5, ha="right", va="bottom",
             color=INK)
@@ -157,6 +162,8 @@ def plot_window(w, model=None, ax=None, show_bands=True, legend=True, title=None
     ax.set_ylabel("Hypocentral distance [km]")
     if title:
         ax.set_title(title, loc="left")
+    elif own:
+        ax.set_title(w.window_id, loc="left", fontsize=7, color=INK2)
     if legend:
         h = [Line2D([], [], marker="o", ls="", ms=3.5, color=INK2, label="real P"),
              Line2D([], [], marker="o", ls="", ms=3.5, mfc="white", color=INK2, label="real S"),
@@ -208,6 +215,8 @@ def plot_window_map(w, ax=None, all_stations=None, legend=True, save_path=None, 
     ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(4))
     ax.set_xlabel("Longitude [°]")
     ax.set_ylabel("Latitude [°]")
+    if own:
+        ax.set_title(w.window_id, loc="left", fontsize=6, color=INK2)
     if legend:
         h = [Line2D([], [], marker="^", ls="", ms=4, color=INK2, label="station with picks"),
              Line2D([], [], marker="^", ls="", ms=4, color="#c9c8c1", label="station, no picks"),
@@ -321,6 +330,7 @@ def plot_event_labels(w, model, events=None, ncols=3, save_path=None, dpi=DPI):
          plt.Rectangle((0, 0), 1, 1, color="#b9d3f1", label="band: generation allowed"),
          Line2D([], [], color=SERIES[1], ls="--", lw=0.8, label="last station")]
     fig.legend(handles=h, loc="upper center", ncol=7, bbox_to_anchor=(0.45, 1.0), fontsize=5.5)
+    fig.suptitle(w.window_id, x=0.01, y=1.04, ha="left", fontsize=7, color=INK2)
     return _finish(fig, save_path, dpi)
 
 
@@ -466,6 +476,7 @@ def plot_scenario_grid(split, network, ev_levels=("sparse", "low", "med", "high"
             w = split[wid]
             plot_window(w, model=model, ax=ax, legend=False, show_bands=False)
             ax.set_title(f"{el} ({int(w.meta['n_events'])} ev.) · noise {nl}", loc="left", fontsize=6)
+            _window_id(ax, wid)
             if i < len(noise_levels) - 1:
                 ax.set_xlabel("")
             if j > 0:
@@ -497,6 +508,7 @@ def plot_gap_sweep(split, network, scenarios=("gap-000-090", "gap-090-180", "gap
         lo, hi = sc.split("-")[1:]
         axes[0][j].set_title(f"azimuthal gap {int(lo)}–{int(hi)}°", loc="left")
         plot_window(w, ax=axes[1][j], legend=False, show_bands=False)
+        _window_id(axes[1][j], wid)
         if j:
             axes[0][j].set_ylabel("")
             axes[1][j].set_ylabel("")
@@ -841,6 +853,7 @@ def plot_representative_windows(split, by="max_concurrent_events", quantiles=(0.
             plot_window(win, model=model, ax=ax, legend=False, show_bands=False)
             ax.set_title(f"{n} ({scales[n]}) · {names.get(q, q)} · {by.replace('_', ' ')} = {int(win.meta[by])}",
                          loc="left", fontsize=5.8)
+            _window_id(ax, wid)
             if i < len(quantiles) - 1:
                 ax.set_xlabel("")
             if j:

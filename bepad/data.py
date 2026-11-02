@@ -97,24 +97,36 @@ class Release:
     def scenarios(self):
         return json.loads((self.path / "scenarios.json").read_text())
 
-    def _read(self, split, table, networks, columns=None):
+    def _read(self, split, table, networks, columns=None, window_ids=None):
         files = sorted((self.path / split / table).glob("network=*.parquet"))
         if networks is not None:
             keep = {f"network={n}.parquet" for n in networks}
             files = [f for f in files if f.name in keep]
         if not files:
             raise FileNotFoundError(f"no {table} files for split={split!r}, networks={networks}")
-        return pd.concat([pd.read_parquet(f, columns=columns) for f in files], ignore_index=True)
+        if window_ids is None:
+            return pd.concat([pd.read_parquet(f, columns=columns) for f in files], ignore_index=True)
+        return pd.concat([_read_windows(f, columns, window_ids) for f in files], ignore_index=True)
 
-    def load(self, split, networks=None, labels=True):
-        """Load one split. ``labels=False`` returns only what an associator may use."""
+    def load(self, split, networks=None, labels=True, scenarios=None, max_windows=None, window_ids=None):
+        """Load one split. ``labels=False`` returns only what an associator may use.
+
+        To save memory, load only some windows: ``scenarios`` (names, e.g. ``"ev-med__noise-high"``),
+        ``max_windows`` (a fixed random sample of at most this many windows per network) or
+        ``window_ids``. Only the rows of those windows are read.
+        """
         cols = None if labels else list(INPUT_COLUMNS)
+        windows = self._read(split, "windows", networks)
+        ids = None
+        if scenarios is not None or max_windows is not None or window_ids is not None:
+            windows = _select(windows, scenarios, max_windows, window_ids)
+            ids = set(windows["window_id"])
         s = Split(
-            windows=self._read(split, "windows", networks),
-            picks=self._read(split, "picks", networks, columns=cols),
-            window_stations=self._read(split, "window_stations", networks),
+            windows=windows,
+            picks=self._read(split, "picks", networks, columns=cols, window_ids=ids),
+            window_stations=self._read(split, "window_stations", networks, window_ids=ids),
             stations=pd.read_parquet(self.path / "stations.parquet"),
-            events=self._read(split, "events", networks) if labels else None,
+            events=self._read(split, "events", networks, window_ids=ids) if labels else None,
             labels=labels,
         )
         s.release, s.name = self, split
@@ -130,6 +142,32 @@ RELEASE = "v0.1"                     # the current release (a folder of the Hugg
 # view ranks methods by their mean over them. ``"core"`` selects them (``--networks core``).
 CORE_NAME = "BEPAD-10"
 CORE_NETWORKS = ["R05", "R07", "R01", "nc", "tx", "JMA", "CM", "R09", "ak", "NOA"]
+
+
+def _select(windows, scenarios=None, max_windows=None, window_ids=None):
+    """The windows kept by :meth:`Release.load` (scenario names, a sample per network, or ids)."""
+    if window_ids is not None:
+        windows = windows[windows["window_id"].isin(set(window_ids))]
+    if scenarios is not None:
+        windows = windows[windows["scenario"].isin([scenarios] if isinstance(scenarios, str) else scenarios)]
+    if max_windows is not None:
+        windows = (windows.groupby("network", group_keys=False)
+                   .apply(lambda g: g.sample(min(len(g), max_windows), random_state=0).sort_index()))
+    return windows
+
+
+def _read_windows(file, columns, window_ids, batch_size=200_000):
+    """Rows of one parquet file whose window is in ``window_ids``, read in batches (low memory)."""
+    import pyarrow as pa
+    import pyarrow.compute as pc
+    import pyarrow.parquet as pq
+
+    pf = pq.ParquetFile(file, pre_buffer=False, buffer_size=1 << 20)   # stream, do not read the file at once
+    schema = pa.schema([pf.schema_arrow.field(c) for c in columns]) if columns else pf.schema_arrow
+    ids = pa.array(sorted(window_ids), type=schema.field("window_id").type)
+    parts = [b.filter(pc.is_in(b.column("window_id"), value_set=ids))
+             for b in pf.iter_batches(batch_size=batch_size, columns=columns)]
+    return pa.Table.from_batches(parts, schema=schema).to_pandas()
 
 
 def _networks(networks):
@@ -164,7 +202,8 @@ def open(path):  # noqa: A001 -- mirrors the usual `dataset.open` idiom
     return Release(path)
 
 
-def load(split="test", networks=None, labels=True, release=RELEASE, root=None, repo_id=REPO_ID):
+def load(split="test", networks=None, labels=True, release=RELEASE, root=None, repo_id=REPO_ID,
+         scenarios=None, max_windows=None, window_ids=None):
     """Load one split as a :class:`Split` (iterate it to get windows).
 
     ``root``: a local release folder (default: the ``BEPAD_ROOT`` environment
@@ -172,11 +211,17 @@ def load(split="test", networks=None, labels=True, release=RELEASE, root=None, r
     (``repo_id``, ``release``) and cached.
     ``labels=False`` returns only what an associator may use. ``networks=["core"]``: the
     :data:`CORE_NETWORKS`.
+    Less memory: ``scenarios`` (e.g. ``"ev-med__noise-high"``), ``max_windows`` (a fixed random
+    sample of at most this many windows per network) or ``window_ids`` (their networks are then
+    the only ones downloaded and read).
     """
+    if networks is None and window_ids is not None:     # a window_id starts with its network: "tx.test..."
+        networks = sorted({w.split(".", 1)[0] for w in window_ids})
     networks = _networks(networks)
     root = root or os.environ.get("BEPAD_ROOT")        # a local copy, e.g. export BEPAD_ROOT=data/releases/v0.1
     path = Path(root) if root else download(release, splits=(split,), networks=networks, repo_id=repo_id)
-    return Release(path).load(split, networks=networks, labels=labels)
+    return Release(path).load(split, networks=networks, labels=labels, scenarios=scenarios,
+                              max_windows=max_windows, window_ids=window_ids)
 
 
 def predictions_frame(window_ids, pick_idx, pred_event):

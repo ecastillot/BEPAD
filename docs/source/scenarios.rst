@@ -21,6 +21,8 @@ Across all networks that is about 9,100 test windows per scenario.
    :width: 100%
 
    Local network (Texas). Left to right: more earthquakes at once. Top to bottom: more noise.
+   Each panel shows its ``window_id`` (bottom right): load it again with
+   ``bepad.load("test", window_ids=[...])``.
 
 .. figure:: _static/figures/scenarios_CM.png
    :width: 100%
@@ -47,6 +49,7 @@ outside it, which is harder to associate.
 
    Gap 0–90°, 90–180° and 180–270° (3–5 earthquakes, noise 0.3). Networks with few far-away
    earthquakes may have fewer earthquakes per window in the 180–270° scenario.
+   The ``window_id`` of each window is at the bottom right of its panel.
 
 .. literalinclude:: ../gallery/gap_sweep.py
    :caption: Code for this figure
@@ -71,7 +74,8 @@ What easy and hard look like:
    :width: 100%
 
    An easy, a typical and a hard window (10th, 50th and 90th percentile of the number of
-   earthquakes active at once) for a local, a regional and a global network.
+   earthquakes active at once) for a local, a regional and a global network. Each panel shows its
+   ``window_id``.
 
 .. literalinclude:: ../gallery/stats_representative_windows.py
    :caption: Code for this figure

@@ -90,26 +90,23 @@ class Associator:
         raise NotImplementedError
 
     # --- provided ------------------------------------------------------------------
-    def run(self, split="test", networks=None, scenarios=None, max_windows=None, workers=1, release=None,
-            root=None, progress=True):
+    def run(self, split="test", networks=None, scenarios=None, max_windows=None, window_ids=None, workers=1,
+            release=None, root=None, progress=True):
         """Run on every window of a split and score it. Returns a :class:`Result`.
 
         ``workers``: number of CPU processes (windows are independent).
-        ``scenarios`` / ``max_windows`` run a subset (quick tests); such runs are
-        marked partial and are not ranked on the leaderboard.
+        ``scenarios`` / ``max_windows`` / ``window_ids`` run a subset (quick tests, as in
+        :func:`bepad.load`); such runs are marked partial and are not ranked on the leaderboard.
         """
         from .data import RELEASE, load
         from .metrics import evaluate
 
-        data = load(split, networks=networks, labels=False, release=release or RELEASE, root=root)
-        w = data.windows
-        keep = w
-        if scenarios is not None:
-            keep = keep[keep.scenario.isin(scenarios)]
-        if max_windows is not None:
-            keep = keep.groupby("network", group_keys=False).head(max_windows)
+        subset = scenarios is not None or max_windows is not None or window_ids is not None
+        data = load(split, networks=networks, labels=False, release=release or RELEASE, root=root,
+                    scenarios=scenarios, max_windows=max_windows, window_ids=window_ids)
+        keep = data.windows
         ids = set(keep.window_id)
-        todo = [(win.window_id, win.meta["network"], win.picks, win.stations) for win in data if win.window_id in ids]
+        todo = [(win.window_id, win.meta["network"], win.picks, win.stations) for win in data]
         rows, locs, secs, t0, n = [], [], [], time.time(), len(todo)
         _RUNNING[0] = self
         if workers > 1:
@@ -137,8 +134,8 @@ class Associator:
         meta = {
             "split": split, "release": data.release.path.name,
             "networks": sorted(keep.network.unique()),
-            "n_windows": n, "complete": n == len(w),
-            "scenarios": "all" if scenarios is None else list(scenarios),
+            "n_windows": n, "complete": not subset,
+            "scenarios": "all" if scenarios is None else ([scenarios] if isinstance(scenarios, str) else list(scenarios)),
             "workers": workers, "runtime_s": round(runtime, 2),
             "seconds_per_window": round(float(np.mean(secs)), 4) if secs else None,   # time inside associate()
             "hardware": f"{platform.processor() or platform.machine()} ({platform.system()})",

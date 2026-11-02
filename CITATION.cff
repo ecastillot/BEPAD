@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use BEPAD, please cite it as below, and also cite UTDQuake and the operators of the networks you use."
+title: "BEPAD: a benchmark dataset for seismic phase association built from UTDQuake"
+type: dataset
+version: "0.1"
+date-released: "2026-11-02"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/ecastillot/BEPAD"
+repository-artifact: "https://huggingface.co/datasets/ecastillot/BEPAD"
+keywords:
+  - seismology
+  - phase association
+  - earthquakes
+  - benchmark
+authors:
+  - family-names: Castillo
+    given-names: Emmanuel
+    affiliation: "The University of Texas at Dallas"
+references:
+  - type: dataset
+    title: "UTDQuake"
+    authors:
+      - family-names: Castillo
+        given-names: Emmanuel
+    repository-artifact: "https://huggingface.co/datasets/ecastillot/UTDQuake"

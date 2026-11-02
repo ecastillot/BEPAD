@@ -301,15 +301,13 @@ def evaluate(predictions, release, split="test", networks=None, min_shared=3, wi
     if not isinstance(predictions, pd.DataFrame):
         p = Path(predictions)
         predictions = pd.read_parquet(p) if p.suffix == ".parquet" else pd.read_csv(p)
+    keep = set(window_ids) if window_ids is not None else None     # a partial run: read only its rows
     windows = rel._read(split, "windows", networks)
-    picks = rel._read(split, "picks", networks, columns=["window_id", "pick_idx", "event_idx"])
-    events = rel._read(split, "events", networks, columns=["window_id", "event_idx", "scorable", "latitude",
-                                                           "longitude", "depth", "t0_rel_s"])
-    if window_ids is not None:
-        keep = set(window_ids)
+    if keep is not None:
         windows = windows[windows.window_id.isin(keep)]
-        picks = picks[picks.window_id.isin(keep)]
-        events = events[events.window_id.isin(keep)]
+    picks = rel._read(split, "picks", networks, columns=["window_id", "pick_idx", "event_idx"], window_ids=keep)
+    events = rel._read(split, "events", networks, columns=["window_id", "event_idx", "scorable", "latitude",
+                                                           "longitude", "depth", "t0_rel_s"], window_ids=keep)
     checks = check_predictions(predictions, picks)
     if checks["n_missing_picks"]:
         print(f"[evaluate] warning: {checks['n_missing_picks']} picks have no prediction -> counted as noise")

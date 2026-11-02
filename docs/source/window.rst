@@ -84,19 +84,20 @@ scores.
 Plot your own window
 --------------------
 
-Any window, by its ``window_id`` or its position in the split:
+Any window, by its ``window_id`` (the figures on this page are ``tx.test.ev-low__noise-med.00000``
+and ``CM.test.ev-low__noise-med.00000``):
 
 .. code-block:: python
 
    import bepad
    from bepad.plots import plot_window_anatomy, plot_event_labels
 
-   test = bepad.load("test", networks=["tx"])
-   w = test[25]                                            # or test["tx.test.ev-high__noise-extreme.00003"]
+   test = bepad.load("test", window_ids=["tx.test.ev-high__noise-extreme.00003"])   # only this window
+   w = test[0]
    plot_window_anatomy(w, model=test.release.label_model, save_path="my_window.png")
    plot_event_labels(w, test.release.label_model, save_path="my_window_events.png")
 
 To find interesting windows, filter the metadata table, for example the most crowded ones:
-``test.windows.sort_values("max_concurrent_events").tail()``.
+``bepad.load("test", networks=["tx"]).windows.sort_values("max_concurrent_events").tail()``.
 
 More figures, each with its code: :doc:`figures`.
