@@ -26,14 +26,15 @@ Only the files you ask for are downloaded, and they are cached, so the second ca
 ``bepad.load("train")`` and ``bepad.load("val")`` work the same way.
 
 ``max_windows`` is a fixed random sample, the same every time. Without it you get every window of
-the networks, which can be large (R07 train: 20 GB in memory; with ``max_windows=20``: 1.4 GB).
-Other ways to load only some windows (only their rows are read):
+the networks, which can be large (the whole test split: 83 million picks; R07 train alone: 20 GB in
+memory). Other ways to choose windows (only their rows are read):
 
 .. code-block:: python
 
-   bepad.load("test")                                                  # every network, every window
    bepad.load("test", networks=["tx"], scenarios="ev-med__noise-high")
    bepad.load("test", window_ids=["tx.test.ev-low__noise-med.00000"])  # one window
+   bepad.load("test", networks="core")                                 # the 10 BEPAD-10 networks
+   bepad.load("train", lazy=True)        # every window, each read from disk when you ask for it
 
 Look at a window
 ----------------
@@ -51,10 +52,49 @@ Look at a window
 What the panels and labels mean: :doc:`window`. More figures, each with its code:
 :doc:`figures`.
 
-Without installing anything
----------------------------
+.. _choose-windows:
 
-Every table is a plain Parquet file:
+Choose windows
+--------------
+
+Every window has a row of metadata: its network, scenario, number of earthquakes, noise, gap,
+magnitudes and more (all columns: :doc:`reference/format`). Filter it, then load only the windows
+you chose:
+
+.. code-block:: python
+
+   rel = bepad.open(bepad.download(splits=("test",), networks=["tx", "CM"]))
+   meta = rel.table("test", "windows")                   # metadata only: one row per window, small
+
+   crowded = meta[(meta.max_concurrent_events >= 5) & (meta.noise_ratio_target >= 1)]
+   test = bepad.load("test", window_ids=crowded.window_id)
+
+Some useful columns: ``scenario``, ``n_events``, ``max_concurrent_events`` (earthquakes active at
+the same time), ``noise_ratio`` (noise picks per real pick), ``gap_max_deg`` (azimuthal gap),
+``mag_min`` / ``mag_max``, ``depth_max_km``, ``n_stations``.
+
+**By station.** ``window_stations`` lists the stations that were operating during each window
+(whether or not they picked). In many networks the stations change over the years:
+
+.. code-block:: python
+
+   rel = bepad.open(bepad.download(splits=("test",), networks=["AEIC"]))
+   ws = rel.table("test", "window_stations")
+   ids = ws.loc[ws.station == "AK.PS07", "window_id"].unique()    # 699 of the 2,300 AEIC windows
+   test = bepad.load("test", window_ids=ids)
+
+The stations that recorded the earthquakes are in the picks (``w.picks.station``); their number per
+window is ``n_active_stations`` in the metadata.
+
+The same ``window_ids`` work everywhere: ``bepad.load``, ``Associator.run`` (:doc:`benchmark`) and
+``ReleaseWindowDataset`` for training (:doc:`train`). ``rel.table`` also reads ``"events"``,
+``"picks"`` and ``"stations"``.
+
+Without the bepad package
+-------------------------
+
+Every table is a plain Parquet file, readable with pandas (and ``huggingface_hub`` for the
+``hf://`` paths):
 
 .. code-block:: python
 
@@ -67,41 +107,4 @@ Every table is a plain Parquet file:
 How much data
 -------------
 
-Every network has the same number of windows in each of the 23 scenarios. BEPAD v0.1 has 91
-networks:
-
-.. list-table::
-   :header-rows: 1
-
-   * - Split
-     - Per network and scenario
-     - Per network (× 23 scenarios)
-     - All networks
-     - Use
-   * - ``train``
-     - 1,000
-     - 23,000
-     - 2,068,000 (90 networks)
-     - training models
-   * - ``val``
-     - 200
-     - 4,600
-     - 412,800 (90 networks)
-     - tuning settings
-   * - ``test``
-     - 100
-     - 2,300
-     - 208,900 (91 networks)
-     - reporting results
-   * - **total**
-     - 1,300
-     - 29,900
-     - **2,689,700**
-     -
-
-Networks with fewer than 200 earthquakes are test only (in v0.1: ESPOO, ``R06``), so train and val
-have 90 networks. A few networks cannot make every gap scenario (no earthquakes with that gap) and
-have fewer windows; the exact counts are in ``manifest.json`` and ``metadata/networks.csv``.
-
-Each earthquake belongs to exactly one split (70 / 10 / 20 % of the earthquakes of each network,
-chosen at random).
+2,689,700 windows in three splits, from 91 networks: :doc:`reference/statistics`.

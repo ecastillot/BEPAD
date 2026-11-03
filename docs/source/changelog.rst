@@ -10,6 +10,21 @@ Same data (BEPAD v0.1).
   memory (only their rows are read). With ``window_ids`` alone, only their networks are downloaded.
 * ``Associator.run`` takes the same options and reads only those windows; ``max_windows`` is now
   the same fixed random sample as in ``bepad.load`` (was: the first windows).
+* Release files in **blocks**: picks, events and window_stations are sorted by ``window_id`` and
+  stored in blocks of about 5,000 rows, zstd-compressed (``bepad.blocks``; recorded as ``layout`` in
+  ``manifest.json``). Same rows and content; one window is read without reading the whole file.
+  New builds write blocks, and ``finalize`` refuses a file that is not in blocks. Older files
+  still load (read whole).
+* ``Release.table(split, name, networks=, window_ids=)``: one table (window metadata, window_stations,
+  events, picks, stations) to filter windows; documented in *Get the data → Choose windows*.
+* ``bepad.load(..., lazy=True)`` (:class:`bepad.data.LazySplit`): each window is read from disk
+  when asked for.
+* ``bepad.torch.ReleaseWindowDataset`` reads from disk by default (``lazy=True``), so the whole
+  train split can be used for training (about 1 GB per DataLoader worker), and takes the same
+  window options.
+* ``GeneratedWindowDataset`` works with every network: networks without earthquakes in the split
+  (test-only, e.g. R06) are left out, and an item redraws network and scenario when one cannot
+  be made (it used to fail).
 * Documentation examples load a few windows; every one-window figure gives its ``window_id``.
 
 0.1.0 (BEPAD v0.1)

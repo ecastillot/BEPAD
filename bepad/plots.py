@@ -72,7 +72,8 @@ def _finish(fig, save_path, dpi=DPI):
 
 def _window_id(ax, wid):
     """The window_id in a corner of a panel, so the window can be loaded again: bepad.load(window_ids=[...])."""
-    ax.text(0.99, 0.02, wid, transform=ax.transAxes, ha="right", va="bottom", fontsize=4.5, color=INK2)
+    ax.text(0.99, 0.02, wid, transform=ax.transAxes, ha="right", va="bottom", fontsize=4.5, color=INK2, zorder=10,
+            bbox=dict(boxstyle="square,pad=0.15", fc="white", ec="none", alpha=0.85))
 
 
 def _panel(ax, letter):

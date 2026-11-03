@@ -75,5 +75,5 @@ Submissions arrive as pull requests on the Hugging Face repository (``bepad subm
    hf upload ecastillot/BEPAD data/releases/v0.1 v0.1 --repo-type dataset
    hf upload ecastillot/BEPAD data/pool pool --repo-type dataset       # for on-the-fly training
 
-Cost (v0.1, 91 networks): about 330 MB per network, 30 GB in total; about 1 hour on Slurm
+Cost (v0.1, 91 networks): about 380 MB per network, 34 GB in total; about 1 hour on Slurm
 (pool 10 min, label model 30 min, windows 20 min on 8 tasks of 32 cores).

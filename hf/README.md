@@ -9,13 +9,8 @@ tags:
   - phase-association
   - benchmark
 configs:
-  - config_name: picks
-    default: true
-    data_files:
-      - {split: train, path: "v0.1/train/picks/*.parquet"}
-      - {split: validation, path: "v0.1/val/picks/*.parquet"}
-      - {split: test, path: "v0.1/test/picks/*.parquet"}
   - config_name: windows
+    default: true
     data_files:
       - {split: train, path: "v0.1/train/windows/*.parquet"}
       - {split: validation, path: "v0.1/val/windows/*.parquet"}
@@ -25,13 +20,18 @@ configs:
       - {split: train, path: "v0.1/train/events/*.parquet"}
       - {split: validation, path: "v0.1/val/events/*.parquet"}
       - {split: test, path: "v0.1/test/events/*.parquet"}
+  - config_name: stations
+    data_files: "v0.1/stations.parquet"
   - config_name: window_stations
     data_files:
       - {split: train, path: "v0.1/train/window_stations/*.parquet"}
       - {split: validation, path: "v0.1/val/window_stations/*.parquet"}
       - {split: test, path: "v0.1/test/window_stations/*.parquet"}
-  - config_name: stations
-    data_files: "v0.1/stations.parquet"
+  - config_name: picks
+    data_files:
+      - {split: train, path: "v0.1/train/picks/*.parquet"}
+      - {split: validation, path: "v0.1/val/picks/*.parquet"}
+      - {split: test, path: "v0.1/test/picks/*.parquet"}
 ---
 
 # BEPAD — Benchmark Earthquake Phase Association Dataset
@@ -48,7 +48,7 @@ its UTDQuake code (`tx`, `CM`, `R08` ...). A station is `NET.STA` (FDSN network 
 
 ```python
 import bepad                                   # pip install bepad
-test = bepad.load("test", labels=False)        # downloads only what is needed
+test = bepad.load("test", networks=["tx"], max_windows=20, labels=False)   # 20 Texas test windows
 for w in test:
     w.picks, w.stations                        # the inputs of one association problem
 report = bepad.evaluate(predictions, test)     # score your associator
@@ -65,10 +65,11 @@ picks = pd.read_parquet("hf://datasets/ecastillot/BEPAD/v0.1/test/picks/network=
 
 | Folder | What |
 |---|---|
-| `v0.1/<split>/picks` | one row per pick: station, phase, time; labels `event_idx` (−1 noise), `pick_type` (real / generated / noise), `real`, `prob` (optional confidence for training, from detectability) |
-| `v0.1/<split>/events` | the earthquakes of each window (origin, location, magnitude, scorable) |
 | `v0.1/<split>/windows` | one row per window: network, scenario, counts, difficulty, seed |
+| `v0.1/<split>/events` | the earthquakes of each window (origin, location, magnitude, scorable) |
 | `v0.1/stations.parquet` | station coordinates; `station` = `NET.STA`, `network` = UTDQuake network |
+| `v0.1/<split>/window_stations` | the stations available in each window (`window_id`, `station`); coordinates in `stations.parquet` |
+| `v0.1/<split>/picks` | one row per pick: station, phase, time; labels `event_idx` (−1 noise), `pick_type` (real / generated / noise), `real`, `prob` (optional confidence for training, from detectability) |
 | `v0.1/metadata/` | window statistics as CSV |
 | `v0.1/label_model.json` | predicted arrivals, timing uncertainty and `prob` model |
 | `pool/` | the quality-controlled earthquakes and picks (for generating new training windows) |

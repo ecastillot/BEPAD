@@ -7,8 +7,11 @@ Data
 .. autofunction:: bepad.load
 .. autofunction:: bepad.download
 .. autofunction:: bepad.open
+.. autoclass:: bepad.data.Release
+   :members: table, load, networks, scenarios, label_model
 .. autoclass:: bepad.data.Split
    :members:
+.. autoclass:: bepad.data.LazySplit
 .. autoclass:: bepad.data.WindowData
 .. autofunction:: bepad.predictions_frame
 
@@ -65,3 +68,5 @@ Building (maintainers)
 .. autofunction:: bepad.build.windows.generate_window
 .. autofunction:: bepad.build.pool.build_network
 .. autofunction:: bepad.build.release.build_release
+.. automodule:: bepad.blocks
+   :members: write_blocked, check_blocked, reblock

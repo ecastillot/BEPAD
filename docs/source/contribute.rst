@@ -105,8 +105,7 @@ Every entry must run the **BEPAD-10 test**: the test windows of the 10 core netw
 
 Add ``--workers 32`` to use 32 CPU cores. While tuning, use the validation split
 (``--split val --networks core``). You can also run more networks (``--networks core tx BYKL``, or
-leave ``--networks`` out for all of them): each one gets its own table. Methods trained per network
-should set ``training = "per network"``.
+leave ``--networks`` out for all of them): each one gets its own table.
 
 ``results/my-method/`` now holds your predictions, the scores (``report/``) and
 ``submission.json``, the record shown on the leaderboard.
@@ -131,15 +130,16 @@ It needs a free Hugging Face account and, once, ``hf auth login``. Without a log
 steps to upload the two folders from the website instead, which also opens a pull request.
 **Run with** ``--dry-run`` **first**: it checks everything and shows the preview, but sends nothing.
 
-For example, submitting ``eqt-utils_simple`` on the development release shows (Texas table):
+For example, the preview of ``eqt-utils_simple`` starts with its BEPAD-10 row:
 
 .. code-block:: text
 
-   ## dev · tx
+   ## v0.1 · BEPAD-10 test (R05, R07, R01, nc, tx, JMA, CM, R09, ak, NOA)
 
-   | # | Method                 | Type      | Training | Event F1 | Pick F1 | Noise rej. | Merge | Split | Epicentre err. (km) | Depth err. (km) | s/window | Windows |
-   | 1       | eqt-utils_simple 0.1   | classical | none     | 0.688    | 0.373   | 0.001      | 0.579 | 0.739 | 123.2               | 1.8             | 0.67     | 115     |
-   | partial | pyocto 0.1             | classical | none     | 0.802    | 0.766   | 0.691      | 0.264 | 0.419 | –                   | –               | 32.91    | 30      |
+   | # | Method               | Type      | Training | Event F1 | Pick F1 | Noise rej. | Merge | Split | Epicentre err. (km) | Depth err. (km) | s/window | Windows | Networks |
+   | 1 | eqt-utils_simple 0.1 | classical | none     | 0.535    | 0.309   | 0.007      | 0.612 | 0.450 | 147.8               | 27.3            | 0.15     | 22800   | 10/10    |
+
+then one table per network it ran.
 
 What happens next
 -----------------

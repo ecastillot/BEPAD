@@ -97,7 +97,8 @@ and ``CM.test.ev-low__noise-med.00000``):
    plot_window_anatomy(w, model=test.release.label_model, save_path="my_window.png")
    plot_event_labels(w, test.release.label_model, save_path="my_window_events.png")
 
-To find interesting windows, filter the metadata table, for example the most crowded ones:
-``bepad.load("test", networks=["tx"]).windows.sort_values("max_concurrent_events").tail()``.
+To find interesting windows, filter the metadata, for example the most crowded ones:
+``test.release.table("test", "windows").sort_values("max_concurrent_events").tail()``. More filters, by
+metadata or by station: :ref:`choose-windows`.
 
 More figures, each with its code: :doc:`figures`.

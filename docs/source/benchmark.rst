@@ -4,7 +4,8 @@ Benchmark your associator
 Four rules
 ----------
 
-#. Report results on the **test** split of every network you use.
+#. Report results on the **test** split of every network you use (for the leaderboard: at least the
+   10 BEPAD-10 networks).
 #. Your method sees only the picks and stations of each window (never the labels).
 #. Each window is a separate problem.
 #. Tune settings only on **train** and **val**.
@@ -28,29 +29,32 @@ Write your method as a small class. BEPAD does the loop, the timing and the scor
            # return:   one integer per pick -- its earthquake number, or -1 for noise
            return np.full(len(picks), -1)
 
-   result = MyMethod(threshold=0.3).run("test", networks=["tx"])   # keyword arguments -> self.config
+   result = MyMethod(threshold=0.3).run("test", networks=["tx"], max_windows=20)   # kwargs -> self.config
    print(result.report)            # scores
    result.report.by_scenario       # one row per scenario
 
-For example, the untuned PyOcto wrapper (``associators/pyocto``) on 30 easy Texas windows prints:
+For example, the simple associator of EQTransformer (``associators/eqt-utils_simple``) on 20
+Texas test windows prints:
 
 .. code-block:: text
 
     event_precision  event_recall  event_f1  pick_precision  pick_recall  pick_f1  noise_rejection  split_rate  merge_rate
-             0.6899        0.9570    0.8018          0.7914       0.7423   0.7661           0.6911      0.4194      0.2636
+             0.7521        0.5906    0.6617          0.1975       0.4782   0.2795              0.0      0.7718      0.5983
 
-It finds 96 % of the earthquakes but splits 42 % of them in pieces — the figure below shows why.
+It finds 59 % of the earthquakes, but splits 77 % of them and merges 60 %, and it puts every noise
+pick into an earthquake (noise rejection 0): fixed 15 s windows cannot separate earthquakes that
+overlap. The figures below show how to see such errors window by window.
 
-Use ``run("val")`` while you tune; ``run("test")`` for the numbers you report. For a quick try,
-``run("test", networks=["tx"], max_windows=20)`` runs 20 windows only; ``workers=16`` runs windows
-on 16 CPU cores in parallel.
+``max_windows=20`` runs 20 windows per network, for a quick try; leave it out to run every window.
+Use ``run("val")`` while you tune; ``run("test")`` for the numbers you report. ``workers=16`` runs
+windows on 16 CPU cores in parallel.
 
 **If your method also locates**, return the labels and a table with one row per earthquake
 number; BEPAD then reports location errors against the catalog (:doc:`reference/metrics`):
 
 .. code-block:: python
 
-       def associate(self, picks, stations):
+       def associate(self, picks, stations):           # import pandas as pd
            ...
            events = pd.DataFrame({"event": [0, 1], "latitude": [...], "longitude": [...],
                                   "depth_km": [...], "t0_rel_s": [...]})     # t0 in window seconds
@@ -116,7 +120,9 @@ pred_event``) and score it:
 
 .. code-block:: python
 
-   test = bepad.load("test", labels=False)
+   import pandas as pd
+
+   test = bepad.load("test", networks=["tx"], labels=False)       # the windows to score
    rows = [bepad.predictions_frame(w.window_id, w.picks.pick_idx, my_associator(w.picks, w.stations))
            for w in test]
    report = bepad.evaluate(pd.concat(rows), test)

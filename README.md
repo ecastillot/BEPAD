@@ -12,7 +12,7 @@ its earthquake, (c) picks by type.*
 ```python
 import bepad
 
-test = bepad.load("test", labels=False)          # download the test split from Hugging Face
+test = bepad.load("test", networks=["tx"], max_windows=20, labels=False)   # 20 Texas test windows
 for w in test:                                   # one window = one association problem
     w.picks, w.stations                          # picks (station, P/S, time) and station coordinates
 report = bepad.evaluate(predictions, test)       # score your associator

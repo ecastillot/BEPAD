@@ -8,6 +8,7 @@ Hugging Face dataset configs/splits:
     <split>/picks/network=<name>.parquet            one row per pick (label: event_idx, -1 noise)
     <split>/events/network=<name>.parquet           one row per event in a window
     <split>/window_stations/network=<name>.parquet  stations available in each window
+    (picks, events and window_stations are sorted by window_id and stored in blocks: bepad.blocks)
     _parts/<name>.json                              per-network build record
     --- written by finalize_release ---
     stations.parquet                                station coordinates
@@ -38,6 +39,7 @@ from pathlib import Path
 import pandas as pd
 
 from .. import __version__
+from ..blocks import BLOCK_ROWS, BLOCKED_TABLES, COMPRESSION, LAYOUT, check_blocked, write_blocked
 from .config import REPO_ROOT, WINDOW_DEFAULTS
 from .geo import stable_seed
 from .labels import LabelModel
@@ -138,7 +140,10 @@ def _build_network(network, cfg, scenarios, workers):
         for t, df in frames.items():
             d = out / split / t
             d.mkdir(parents=True, exist_ok=True)
-            df.to_parquet(d / f"network={network}.parquet", index=False)
+            if t in BLOCKED_TABLES:                    # one window can be read without the whole file
+                write_blocked(df, d / f"network={network}.parquet", BLOCK_ROWS[t])
+            else:
+                df.to_parquet(d / f"network={network}.parquet", index=False)
 
         w, e = frames["windows"], frames["events"]
         uses = e["src_event_id"].value_counts()
@@ -193,6 +198,10 @@ def finalize_release(cfg):
     networks = sorted(parts)
     if not networks:
         raise RuntimeError(f"nothing to finalize: no built networks in {out / '_parts'}")
+    problems = [q for t in BLOCKED_TABLES for f in sorted(out.glob(f"*/{t}/network=*.parquet"))
+                for q in check_blocked(f)]
+    if problems:
+        raise RuntimeError("files not in blocks (rebuild them, or bepad.blocks.reblock):\n  " + "\n  ".join(problems))
 
     pd.concat([load_network(cfg["data_root"], n)[2] for n in networks], ignore_index=True) \
         .to_parquet(out / "stations.parquet", index=False)
@@ -229,6 +238,7 @@ def finalize_release(cfg):
                                         "source_sha256", "n_events", "built")}
                           for n in networks},
         "counts": counts,
+        "layout": {"name": LAYOUT, "block_rows": BLOCK_ROWS, "compression": COMPRESSION},
         "skipped_splits": {n: p["skipped_splits"] for n, p in parts.items() if p["skipped_splits"]},
     }
     with open(out / "manifest.json", "w") as f:

@@ -70,16 +70,22 @@ class ReleaseWindowDataset(Dataset):
 
     ``release``: a :class:`bepad.data.Release`, a local release folder, or None
     to download ``split`` from Hugging Face.
+    Each window is read from disk when the ``DataLoader`` asks for it (``lazy=True``, the default),
+    so any split fits in memory. ``lazy=False`` holds all chosen windows in memory (faster per
+    window, but 20 GB for R07 train alone). ``networks``, ``scenarios``, ``max_windows`` (per
+    network) and ``window_ids`` choose windows, as in :func:`bepad.load`.
     """
 
-    def __init__(self, release=None, split="train", networks=None):
+    def __init__(self, release=None, split="train", networks=None, scenarios=None, max_windows=None,
+                 window_ids=None, lazy=True):
         from .data import Release, load
 
+        sub = dict(scenarios=scenarios, max_windows=max_windows, window_ids=window_ids, lazy=lazy)
         if release is None:
-            self.split = load(split, networks=networks, labels=True)
+            self.split = load(split, networks=networks, labels=True, **sub)
         else:
             rel = release if isinstance(release, Release) else Release(release)
-            self.split = rel.load(split, networks=networks, labels=True)
+            self.split = rel.load(split, networks=networks, labels=True, **sub)
 
     def __len__(self):
         return len(self.split)
@@ -94,8 +100,10 @@ class GeneratedWindowDataset(Dataset):
 
     Item ``i`` of epoch ``e`` uses seed sha256(base_seed, e, i), so a run is
     reproducible and every epoch sees new windows. Scenario configs (dicts of
-    window parameters, e.g. from ``bepad.materialize.expand_scenarios``) are
-    drawn uniformly per item, as is the network.
+    window parameters, e.g. ``Release.scenarios()``, BEPAD's own) are
+    drawn uniformly per item, as is the network. Networks without earthquakes in ``split`` (test-only
+    networks, e.g. R06 for train) are left out; if a network cannot make the drawn scenario, the item
+    draws another network and scenario (still reproducible).
     """
 
     def __init__(self, data_root, networks, scenarios, split="train", length=10_000, base_seed=0):
@@ -105,8 +113,17 @@ class GeneratedWindowDataset(Dataset):
         from .build.windows import NetworkIndex
 
         model = LabelModel.load(pool_dir(data_root) / "label_model.json")
-        self.index = {n: NetworkIndex(*load_network(data_root, n), network=n, label_model=model) for n in networks}
-        self.networks = list(networks)
+        self.index = {}
+        for n in networks:
+            ev, pk, st = load_network(data_root, n)
+            if (ev["split"] == split).any():
+                self.index[n] = NetworkIndex(ev, pk, st, network=n, label_model=model)
+        skipped = sorted(set(networks) - set(self.index))
+        if skipped:
+            print(f"[GeneratedWindowDataset] no {split} earthquakes, left out: {', '.join(skipped)}")
+        if not self.index:
+            raise ValueError(f"no network has {split} earthquakes")
+        self.networks = list(self.index)
         self.scenarios = [(k, {**WINDOW_DEFAULTS, **v}) for k, v in
                           (scenarios.items() if isinstance(scenarios, dict) else enumerate(scenarios))]
         self.split = split
@@ -125,14 +142,14 @@ class GeneratedWindowDataset(Dataset):
 
         seed = stable_seed(self.base_seed, self.epoch, i)
         rng = np.random.default_rng(seed)
-        net = self.networks[rng.integers(len(self.networks))]
-        name, cfg = self.scenarios[rng.integers(len(self.scenarios))]
-        for attempt in range(10):
-            w = generate_window(self.index[net], self.split, cfg, seed + attempt, f"gen-{self.epoch}-{i}", str(name))
+        for draw in range(20):                          # a network may not be able to make a scenario
+            net = self.networks[rng.integers(len(self.networks))]
+            name, cfg = self.scenarios[rng.integers(len(self.scenarios))]
+            w = generate_window(self.index[net], self.split, cfg, seed + draw, f"gen-{self.epoch}-{i}", str(name))
             if w is not None:
                 break
         else:
-            raise RuntimeError(f"could not generate a window for network {net}, scenario {name}")
+            raise RuntimeError(f"could not generate window {i}: 20 draws of network and scenario failed")
         st = self.index[net].stations.loc[w.stations["station"]].reset_index()
         return window_to_tensors(w.window["window_id"], w.picks, st, w.events)
 

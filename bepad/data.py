@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from .blocks import BlockReader, read_rows
+
 #: Columns of picks.parquet that carry ground truth. Never give them to an associator.
 LABEL_COLUMNS = ("event_idx", "pick_type", "real", "prob", "sigma_s", "in_scorable_event",
                  "src_event_id", "src_pick_id")
@@ -70,6 +72,57 @@ class Split:
                 f"labels={self.labels}>")
 
 
+class LazySplit:
+    """The windows of one split, each read from disk when it is asked for.
+
+    Same use as :class:`Split` (``len``, ``split[i]``, ``split["<window_id>"]``, iteration, the
+    ``windows`` table), but only the window table is in memory, so it fits any split. Reading is
+    fast when the release files are in blocks (:mod:`bepad.blocks`); windows read in order share
+    their block reads.
+    """
+
+    def __init__(self, release, split, windows, labels=True):
+        self.release, self.name, self.labels = release, split, labels
+        self.windows = windows.reset_index(drop=True)
+        self._pos = dict(zip(self.windows["window_id"], range(len(self.windows))))
+        st = pd.read_parquet(release.path / "stations.parquet")
+        self._stations = {n: g.drop(columns="network") for n, g in st.groupby("network")}
+        self._readers = {}
+
+    def _reader(self, network, table):
+        key = (network, table)
+        if key not in self._readers:
+            cols = list(INPUT_COLUMNS) if table == "picks" and not self.labels else None
+            self._readers[key] = BlockReader(self.release.path / self.name / table / f"network={network}.parquet", cols)
+        return self._readers[key]
+
+    def __len__(self):
+        return len(self.windows)
+
+    def __iter__(self):
+        for i in range(len(self.windows)):
+            yield self[i]
+
+    def __getitem__(self, i):
+        if isinstance(i, str):
+            i = self._pos[i]
+        meta = self.windows.iloc[i]
+        wid, net = meta["window_id"], meta["network"]
+        picks = self._reader(net, "picks").window(wid)
+        ws = self._reader(net, "window_stations").window(wid)
+        st = ws.merge(self._stations[net], on="station", how="left")
+        st = st[["station", "latitude", "longitude", "elevation"]].reset_index(drop=True)
+        ev = None
+        if self.labels:
+            ev = self._reader(net, "events").window(wid)
+            ev = ev if len(ev) else None
+        return WindowData(wid, meta, picks, st, ev)
+
+    def __repr__(self):
+        nets = self.windows["network"].nunique() if len(self.windows) else 0
+        return f"<bepad.LazySplit {len(self)} windows, {nets} networks, labels={self.labels}>"
+
+
 class Release:
     """A BEPAD release folder (local copy of the Hugging Face dataset or a local build)."""
 
@@ -106,14 +159,27 @@ class Release:
             raise FileNotFoundError(f"no {table} files for split={split!r}, networks={networks}")
         if window_ids is None:
             return pd.concat([pd.read_parquet(f, columns=columns) for f in files], ignore_index=True)
-        return pd.concat([_read_windows(f, columns, window_ids) for f in files], ignore_index=True)
+        return pd.concat([read_rows(f, window_ids, columns) for f in files], ignore_index=True)
 
-    def load(self, split, networks=None, labels=True, scenarios=None, max_windows=None, window_ids=None):
+    def table(self, split, name, networks=None, window_ids=None):
+        """One table as a DataFrame: ``"windows"`` (metadata), ``"window_stations"``, ``"events"``,
+        ``"picks"`` (with labels) of ``split``, or ``"stations"`` (coordinates, every split).
+        ``networks`` (``"core"`` = BEPAD-10) and ``window_ids`` limit the rows that are read."""
+        if name == "stations":
+            st = pd.read_parquet(self.path / "stations.parquet")
+            nets = _networks(networks)
+            return st if nets is None else st[st["network"].isin(nets)].reset_index(drop=True)
+        return self._read(split, name, _networks(networks), window_ids=None if window_ids is None else set(window_ids))
+
+    def load(self, split, networks=None, labels=True, scenarios=None, max_windows=None, window_ids=None,
+             lazy=False):
         """Load one split. ``labels=False`` returns only what an associator may use.
 
         To save memory, load only some windows: ``scenarios`` (names, e.g. ``"ev-med__noise-high"``),
         ``max_windows`` (a fixed random sample of at most this many windows per network) or
         ``window_ids``. Only the rows of those windows are read.
+        ``lazy=True``: keep only the window table in memory and read each window from disk when it
+        is asked for (:class:`LazySplit`; for training on many windows).
         """
         cols = None if labels else list(INPUT_COLUMNS)
         windows = self._read(split, "windows", networks)
@@ -121,6 +187,8 @@ class Release:
         if scenarios is not None or max_windows is not None or window_ids is not None:
             windows = _select(windows, scenarios, max_windows, window_ids)
             ids = set(windows["window_id"])
+        if lazy:
+            return LazySplit(self, split, windows, labels)
         s = Split(
             windows=windows,
             picks=self._read(split, "picks", networks, columns=cols, window_ids=ids),
@@ -156,20 +224,6 @@ def _select(windows, scenarios=None, max_windows=None, window_ids=None):
     return windows
 
 
-def _read_windows(file, columns, window_ids, batch_size=200_000):
-    """Rows of one parquet file whose window is in ``window_ids``, read in batches (low memory)."""
-    import pyarrow as pa
-    import pyarrow.compute as pc
-    import pyarrow.parquet as pq
-
-    pf = pq.ParquetFile(file, pre_buffer=False, buffer_size=1 << 20)   # stream, do not read the file at once
-    schema = pa.schema([pf.schema_arrow.field(c) for c in columns]) if columns else pf.schema_arrow
-    ids = pa.array(sorted(window_ids), type=schema.field("window_id").type)
-    parts = [b.filter(pc.is_in(b.column("window_id"), value_set=ids))
-             for b in pf.iter_batches(batch_size=batch_size, columns=columns)]
-    return pa.Table.from_batches(parts, schema=schema).to_pandas()
-
-
 def _networks(networks):
     """``"core"`` in a list of networks stands for the core networks."""
     if networks is None:
@@ -203,7 +257,7 @@ def open(path):  # noqa: A001 -- mirrors the usual `dataset.open` idiom
 
 
 def load(split="test", networks=None, labels=True, release=RELEASE, root=None, repo_id=REPO_ID,
-         scenarios=None, max_windows=None, window_ids=None):
+         scenarios=None, max_windows=None, window_ids=None, lazy=False):
     """Load one split as a :class:`Split` (iterate it to get windows).
 
     ``root``: a local release folder (default: the ``BEPAD_ROOT`` environment
@@ -213,7 +267,8 @@ def load(split="test", networks=None, labels=True, release=RELEASE, root=None, r
     :data:`CORE_NETWORKS`.
     Less memory: ``scenarios`` (e.g. ``"ev-med__noise-high"``), ``max_windows`` (a fixed random
     sample of at most this many windows per network) or ``window_ids`` (their networks are then
-    the only ones downloaded and read).
+    the only ones downloaded and read). ``lazy=True``: read each window from disk when it is asked
+    for (:class:`LazySplit`).
     """
     if networks is None and window_ids is not None:     # a window_id starts with its network: "tx.test..."
         networks = sorted({w.split(".", 1)[0] for w in window_ids})
@@ -221,7 +276,7 @@ def load(split="test", networks=None, labels=True, release=RELEASE, root=None, r
     root = root or os.environ.get("BEPAD_ROOT")        # a local copy, e.g. export BEPAD_ROOT=data/releases/v0.1
     path = Path(root) if root else download(release, splits=(split,), networks=networks, repo_id=repo_id)
     return Release(path).load(split, networks=networks, labels=labels, scenarios=scenarios,
-                              max_windows=max_windows, window_ids=window_ids)
+                              max_windows=max_windows, window_ids=window_ids, lazy=lazy)
 
 
 def predictions_frame(window_ids, pick_idx, pred_event):

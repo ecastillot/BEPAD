@@ -23,7 +23,8 @@ network with every associator that ran it.
    * - **s/window**
      - time spent inside the associator per window, on the author's hardware
 
-**Before posting**, authors see their row in these tables with ``bepad submit ... --dry-run``.
+**Before posting**, authors see their row in these tables with ``bepad submit ... --dry-run``
+(:doc:`contribute`).
 The official tables are also in the dataset repository (``leaderboard/README.md`` on Hugging
 Face).
 
@@ -96,16 +97,3 @@ Official results
 
 .. raw:: html
    :file: _generated/leaderboard.html
-
-Preview: how the leaderboard will look
---------------------------------------
-
-.. warning::
-
-   **Example only — not official results.** BEPAD v0.1 is not published yet. The tables below were
-   built from the small development release (six networks, 5 test windows per scenario) with
-   one of the :doc:`associators`, using the same commands authors will use. Here the six
-   development networks stand in for the core networks.
-
-.. raw:: html
-   :file: _generated/leaderboard_example.html

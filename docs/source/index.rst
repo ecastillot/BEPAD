@@ -18,7 +18,7 @@ BEPAD gives you thousands of association problems built from **real earthquakes 
 
    import bepad
 
-   test = bepad.load("test", labels=False)     # download the test split
+   test = bepad.load("test", networks=["tx"], max_windows=20, labels=False)   # 20 Texas test windows
    for w in test:                              # one window = one association problem
        w.picks                                 # station, phase (P/S), time
        w.stations                              # station coordinates
@@ -78,6 +78,7 @@ Start here
    :caption: Dataset details
 
    reference/statistics
+   reference/structure
    reference/format
    reference/labels
    reference/metrics

@@ -1,106 +1,8 @@
 File format
 ===========
 
-A release is a folder of Parquet files, one file per network in each table:
-
-.. code-block:: text
-
-   v0.1/
-   ├── train/  val/  test/
-   │   ├── windows/network=<name>.parquet          one row per window
-   │   ├── picks/network=<name>.parquet            one row per pick
-   │   ├── events/network=<name>.parquet           one row per earthquake in a window
-   │   └── window_stations/network=<name>.parquet  stations of each window
-   ├── stations.parquet          station coordinates
-   ├── metadata/                 windows_<split>.csv, networks.csv (statistics)
-   ├── label_model.json          predicted arrivals, σ(r), prob (see Labels)
-   ├── scenarios.json            parameters of each scenario
-   └── manifest.json             versions, configuration, counts
-
-Tables are joined on ``window_id`` (for example ``tx.test.ev-med__noise-high.00012``).
-
-picks
------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 22 78
-
-   * - Column
-     - Meaning
-   * - ``window_id``, ``pick_idx``
-     - window and pick number (0…N−1, by time) — **the key of your predictions**
-   * - ``station``, ``phase``
-     - station, ``NET.STA`` (FDSN network and station code, e.g. ``2T.EF51``); ``P`` or ``S``
-   * - ``t_rel_s``, ``time``
-     - seconds from the window start; absolute UTC time
-   * - ``event_idx`` *(label)*
-     - earthquake of the pick (0…E−1, by origin time); −1 = noise
-   * - ``pick_type``, ``real`` *(label)*
-     - ``real`` / ``generated`` / ``noise``; 1 for real picks
-   * - ``prob``, ``sigma_s`` *(label)*
-     - confidence of being an arrival (≥ 0.5) or noise (0); timing uncertainty [s]
-   * - ``in_scorable_event`` *(label)*
-     - pick of a scored earthquake (always true for event picks: every earthquake is scored)
-   * - ``src_event_id``, ``src_pick_id`` *(label)*
-     - UTDQuake identifiers
-
-Columns marked *(label)* are removed by ``bepad.load(..., labels=False)``.
-
-events
-------
-
-One row per earthquake in a window. Every column is a label (the associator never sees it).
-
-.. list-table::
-   :header-rows: 1
-   :widths: 25 12 63
-
-   * - Column
-     - Unit
-     - Meaning
-   * - ``window_id``, ``event_idx``
-     -
-     - window, and the earthquake's number in it (0…E−1, ordered by origin time)
-   * - ``t0_rel_s``
-     - s
-     - origin time from the window start (negative for an edge event)
-   * - ``origin_time``
-     - UTC
-     - absolute origin time in the window
-   * - ``latitude``, ``longitude``
-     - °
-     - epicentre, from the network's catalog
-   * - ``depth``
-     - m
-     - hypocentral depth, from the catalog
-   * - ``magnitude``, ``magnitude_type``
-     -
-     - from the catalog (types differ between networks: ML, mb, Mw, ...)
-   * - ``n_picks``, ``n_real_picks``, ``n_generated_picks``
-     -
-     - picks of this earthquake inside the window: all / real / generated
-   * - ``n_p``, ``n_s``, ``n_stations``
-     -
-     - real P picks, real S picks, stations with real picks (always ≥ 4 P on ≥ 3 stations)
-   * - ``gap_deg``
-     - °
-     - azimuthal gap of the stations that picked it inside the window
-   * - ``last_station_km``
-     - km
-     - hypocentral distance of its farthest real pick in the catalog (the limit for generated picks)
-   * - ``first_pick_s``, ``last_pick_s``
-     - s
-     - time span of its picks in the window
-   * - ``is_edge``
-     -
-     - true if it started before the window
-   * - ``scorable``
-     -
-     - always true: every earthquake is scored
-   * - ``src_event_id``, ``src_origin_time``
-     -
-     - UTDQuake event ID and its real origin time
+The columns of every table, in the order of the Hugging Face dataset viewer. How the tables fit
+together and how the files are stored: :doc:`structure`.
 
 windows
 -------
@@ -160,6 +62,61 @@ One row per window (also as ``metadata/windows_<split>.csv``).
      - days
      - real-time spread of the source earthquakes; the earthquake the window was built around
 
+events
+------
+
+One row per earthquake in a window. Every column is a label (the associator never sees it).
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 12 63
+
+   * - Column
+     - Unit
+     - Meaning
+   * - ``window_id``, ``event_idx``
+     -
+     - window, and the earthquake's number in it (0…E−1, ordered by origin time)
+   * - ``t0_rel_s``
+     - s
+     - origin time from the window start (negative for an edge event)
+   * - ``origin_time``
+     - UTC
+     - absolute origin time in the window
+   * - ``latitude``, ``longitude``
+     - °
+     - epicentre, from the network's catalog
+   * - ``depth``
+     - m
+     - hypocentral depth, from the catalog
+   * - ``magnitude``, ``magnitude_type``
+     -
+     - from the catalog (types differ between networks: ML, mb, Mw, ...)
+   * - ``n_picks``, ``n_real_picks``, ``n_generated_picks``
+     -
+     - picks of this earthquake inside the window: all / real / generated
+   * - ``n_p``, ``n_s``, ``n_stations``
+     -
+     - real P picks, real S picks, stations with real picks (always ≥ 4 P on ≥ 3 stations)
+   * - ``gap_deg``
+     - °
+     - azimuthal gap of the stations that picked it inside the window
+   * - ``last_station_km``
+     - km
+     - hypocentral distance of its farthest real pick in the catalog (the limit for generated picks)
+   * - ``first_pick_s``, ``last_pick_s``
+     - s
+     - time span of its picks in the window
+   * - ``is_edge``
+     -
+     - true if it started before the window
+   * - ``scorable``
+     -
+     - always true: every earthquake is scored
+   * - ``src_event_id``, ``src_origin_time``
+     -
+     - UTDQuake event ID and its real origin time
+
 stations
 --------
 
@@ -191,3 +148,31 @@ window_stations
 
 One row per (``window_id``, ``station``): every station available in the window, including those
 without picks. Join with ``stations`` on (``network``, ``station``) for coordinates.
+
+picks
+-----
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - Column
+     - Meaning
+   * - ``window_id``, ``pick_idx``
+     - window and pick number (0…N−1, by time) — **the key of your predictions**
+   * - ``station``, ``phase``
+     - station, ``NET.STA`` (FDSN network and station code, e.g. ``2T.EF51``); ``P`` or ``S``
+   * - ``t_rel_s``, ``time``
+     - seconds from the window start; absolute UTC time
+   * - ``event_idx`` *(label)*
+     - earthquake of the pick (0…E−1, by origin time); −1 = noise
+   * - ``pick_type``, ``real`` *(label)*
+     - ``real`` / ``generated`` / ``noise``; 1 for real picks
+   * - ``prob``, ``sigma_s`` *(label)*
+     - confidence of being an arrival (≥ 0.5) or noise (0); timing uncertainty [s]
+   * - ``in_scorable_event`` *(label)*
+     - pick of a scored earthquake (always true for event picks: every earthquake is scored)
+   * - ``src_event_id``, ``src_pick_id`` *(label)*
+     - UTDQuake identifiers
+
+Columns marked *(label)* are removed by ``bepad.load(..., labels=False)``.
