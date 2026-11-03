@@ -31,16 +31,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib
+import matplotlib  # no backend is forced: figures show in notebooks, and matplotlib uses Agg without a display
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.lines import Line2D
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-from matplotlib.colors import LinearSegmentedColormap, Normalize  # noqa: E402
-from matplotlib.lines import Line2D  # noqa: E402
-
-from .build.geo import haversine_km  # noqa: E402
+from .build.geo import haversine_km
 
 # Validated categorical order (dataviz reference palette); events cycle with their index printed.
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]

@@ -1,6 +1,12 @@
 Get the data
 ============
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/ecastillot/BEPAD/blob/main/notebooks/01_get_the_data.ipynb
+   :alt: Open in Colab
+
+**Try it in Colab:** load windows, look at one, choose windows by their metadata (2 minutes, nothing to install).
+
 BEPAD is a finished dataset on Hugging Face. You download it; you never build it.
 
 With the ``bepad`` package

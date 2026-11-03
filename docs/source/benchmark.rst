@@ -1,6 +1,12 @@
 Benchmark your associator
 =========================
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/ecastillot/BEPAD/blob/main/notebooks/02_benchmark.ipynb
+   :alt: Open in Colab
+
+**Try it in Colab:** a basic DBSCAN associator, its scores and mistakes, tuning on val, and a dry-run submission (3 minutes).
+
 Four rules
 ----------
 

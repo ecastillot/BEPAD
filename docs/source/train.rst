@@ -1,6 +1,12 @@
 Train a model
 =============
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/ecastillot/BEPAD/blob/main/notebooks/03_train.ipynb
+   :alt: Open in Colab
+
+**Try it in Colab:** a small PyTorch model trained on 300 windows, with its learning curve (2 minutes on a CPU).
+
 Every pick has a label (``event_idx``) and a confidence (``prob``), which is what a supervised
 associator needs.
 

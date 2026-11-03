@@ -20,6 +20,8 @@ for w in test:                                   # one window = one association 
 report = bepad.evaluate(predictions, test)       # score your associator
 ```
 
+Try it in Colab, nothing to install: [get the data](https://colab.research.google.com/github/ecastillot/BEPAD/blob/main/notebooks/01_get_the_data.ipynb) · [benchmark your associator](https://colab.research.google.com/github/ecastillot/BEPAD/blob/main/notebooks/02_benchmark.ipynb) · [train a model](https://colab.research.google.com/github/ecastillot/BEPAD/blob/main/notebooks/03_train.ipynb).
+
 Share your associator and get on the leaderboard in four commands:
 
 ```bash
