@@ -1,6 +1,19 @@
 BEPAD
 =====
 
+.. image:: https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white
+   :target: https://pypi.org/project/bepad/
+   :alt: PyPI version
+.. image:: https://img.shields.io/badge/Data-v0.1-yellow?style=for-the-badge
+   :target: https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.1
+   :alt: Data v0.1
+.. image:: https://img.shields.io/badge/HuggingFace-Dataset-yellow?style=for-the-badge&logo=huggingface&logoColor=black
+   :target: https://huggingface.co/datasets/ecastillot/BEPAD
+   :alt: Hugging Face dataset
+.. image:: https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github
+   :target: https://github.com/ecastillot/BEPAD
+   :alt: GitHub repository
+
 **Benchmark Earthquake Phase Association Dataset**
 
 A phase associator takes the P and S picks of a seismic network and groups them into earthquakes.

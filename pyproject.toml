@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bepad"
-version = "0.1.1"
+version = "0.1.2"
 description = "BEPAD: a benchmark dataset for seismic phase association built from UTDQuake"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -20,6 +20,7 @@ dependencies = [
 ]
 
 [project.urls]
+Documentation = "https://bepad.readthedocs.io"
 Repository = "https://github.com/ecastillot/BEPAD"
 Dataset = "https://huggingface.co/datasets/ecastillot/BEPAD"
 

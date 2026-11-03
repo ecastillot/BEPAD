@@ -5,6 +5,7 @@ type: dataset
 version: "0.1"
 date-released: "2026-11-02"
 license: GPL-3.0-or-later
+url: "https://bepad.readthedocs.io"
 repository-code: "https://github.com/ecastillot/BEPAD"
 repository-artifact: "https://huggingface.co/datasets/ecastillot/BEPAD"
 keywords:

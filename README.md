@@ -1,5 +1,7 @@
 # BEPAD — a benchmark dataset for seismic phase association
 
+[![PyPI](https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/bepad/) [![Data v0.1](https://img.shields.io/badge/Data-v0.1-yellow?style=for-the-badge)](https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.1) [![Hugging Face Dataset](https://img.shields.io/badge/HuggingFace-Dataset-yellow?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/ecastillot/BEPAD) [![Read the Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://bepad.readthedocs.io/en/latest/) [![GitHub](https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github)](https://github.com/ecastillot/BEPAD)
+
 A phase associator groups the P and S picks of a seismic network into earthquakes. BEPAD gives
 thousands of association problems built from **real earthquakes and real picks**
 ([UTDQuake](https://huggingface.co/datasets/ecastillot/UTDQuake)), with the answer for every pick.
@@ -7,7 +9,7 @@ thousands of association problems built from **real earthquakes and real picks**
 ![a BEPAD window](https://raw.githubusercontent.com/ecastillot/BEPAD/main/docs/figures/window_anatomy_tx.png)
 
 *One window (Texas network): (a) earthquakes and stations, (b) every pick at its distance from
-its earthquake, (c) picks by type.*
+its earthquake, (c) picks by type. The associator's job is to find which picks belong together.*
 
 ```python
 import bepad
@@ -34,8 +36,8 @@ bepad submit results/my-method --code associators/my-method    # opens a Hugging
 | **Associator authors** | fill in `bepad.Associator`, run on `test`, submit to the leaderboard — see *Contribute your associator* |
 | **Deep learning** | `bepad.torch.ReleaseWindowDataset` — see *Train a model* |
 
-Code: https://github.com/ecastillot/BEPAD · Data: https://huggingface.co/datasets/ecastillot/BEPAD · Documentation: `docs/` (Read the Docs). Install: `pip install bepad` (or `pip install -e .` from
-this folder; `.[dl]` for PyTorch, `.[build]` to rebuild the dataset).
+Documentation: https://bepad.readthedocs.io · Data: https://huggingface.co/datasets/ecastillot/BEPAD · Code: https://github.com/ecastillot/BEPAD.
+Install: `pip install bepad` (or `pip install -e .` from this folder; `.[dl]` for PyTorch, `.[build]` to rebuild the dataset).
 
 ## Repository
 

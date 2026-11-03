@@ -36,10 +36,17 @@ configs:
 
 # BEPAD — Benchmark Earthquake Phase Association Dataset
 
+[![PyPI](https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/bepad/) [![Data v0.1](https://img.shields.io/badge/Data-v0.1-yellow?style=for-the-badge)](https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.1) [![Read the Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://bepad.readthedocs.io/en/latest/) [![GitHub](https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github)](https://github.com/ecastillot/BEPAD)
+
 Thousands of phase-association problems built from **real earthquakes and real picks** of
 [UTDQuake](https://huggingface.co/datasets/ecastillot/UTDQuake). Each **window** holds several
 overlapping earthquakes on one seismic network, with real, generated and noise picks, and the
 answer (earthquake) for every pick.
+
+![a BEPAD window](https://raw.githubusercontent.com/ecastillot/BEPAD/main/docs/figures/window_anatomy_tx.png)
+
+*One window (Texas network): (a) earthquakes and stations, (b) every pick at its distance from
+its earthquake, (c) picks by type. The associator's job is to find which picks belong together.*
 
 **v0.1** is built from UTDQuake 1.0 (Hugging Face commit `8524c6f0`): every seismic network, named by
 its UTDQuake code (`tx`, `CM`, `R08` ...). A station is `NET.STA` (FDSN network and station code).
