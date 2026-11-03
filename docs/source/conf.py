@@ -14,7 +14,7 @@ autodoc_mock_imports = [
 project = "BEPAD"
 copyright = "2026, Emmanuel Castillo"
 author = "Emmanuel Castillo"
-release = "0.1.2"
+release = "0.1.3"
 
 extensions = [
     "sphinx.ext.autodoc",

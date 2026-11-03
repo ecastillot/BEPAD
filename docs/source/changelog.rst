@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.1.3
+-----
+
+Same data (BEPAD v0.1).
+
+* Three Colab notebooks (``notebooks/``): get the data, benchmark your associator (a basic DBSCAN), train a
+  model; linked at the top of the matching documentation pages.
+* ``bepad.plots`` no longer forces matplotlib's non-interactive backend, so figures show in notebooks.
+* Links between GitHub, PyPI, Hugging Face and the documentation (badges, project URLs).
+
 0.1.2
 -----
 
@@ -22,9 +32,6 @@ Same data (BEPAD v0.1), now stored in blocks.
   (test-only, e.g. R06) are left out, and an item redraws network and scenario when one cannot
   be made (it used to fail).
 * Documentation examples load a few windows; every one-window figure gives its ``window_id``.
-* Three Colab notebooks (``notebooks/``): get the data, benchmark your associator (a basic DBSCAN), train a
-  model; linked at the top of the matching documentation pages.
-* ``bepad.plots`` no longer forces matplotlib's non-interactive backend, so figures show in notebooks.
 
 0.1.1
 -----
