@@ -73,6 +73,15 @@ The rules:
 
 Details and formulas: :doc:`reference/labels`.
 
+How long is a window
+--------------------
+
+A window lasts twice the longest travel time of its earthquakes (the time from an origin to its
+last real pick), so a window on a large network is longer than one on a small array. Origins are
+placed at random in the window; if an earthquake starts late, the window is extended until it has
+its minimum picks. How close in time the earthquakes are depends on how many the window has (the
+scenario, :doc:`scenarios`).
+
 Every earthquake is a complete problem
 --------------------------------------
 

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use BEPAD, please cite it as below, and also cite UTDQuake and the operators of the networks you use."
 title: "BEPAD: a benchmark dataset for seismic phase association built from UTDQuake"
 type: dataset
-version: "0.1"
-date-released: "2026-11-02"
+version: "0.2"
+date-released: "2026-11-09"
 license: GPL-3.0-or-later
 url: "https://bepad.readthedocs.io"
 repository-code: "https://github.com/ecastillot/BEPAD"

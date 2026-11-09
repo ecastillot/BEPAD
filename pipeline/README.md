@@ -6,7 +6,7 @@ settings (environment, partition, UTDQuake copy and commit) are in [`config.sh`]
 release settings in `configs/<version>.yaml` and `configs/pool.yaml`.
 
 ```bash
-bash pipeline/run_version.sh v0.1                 # every UTDQuake network
+bash pipeline/run_version.sh v0.2                 # every UTDQuake network
 bash pipeline/run_version.sh dev tx CM R08        # a quick check: pool only these networks, configs/dev.yaml
 ```
 
@@ -15,6 +15,7 @@ bash pipeline/run_version.sh dev tx CM R08        # a quick check: pool only the
 | 1. Pool | `bash pipeline/01_pool/run.sh <version> [<dep>] [network ...]` | `data/pool/`: QC'd events, picks, stations per network; `qc_report.csv`; `label_model.json` |
 | 2. Release | `bash pipeline/02_release/run.sh <version> [<dep>]` | `data/releases/<version>/`: windows of every split and scenario, manifest, metadata, figures |
 | 2b. Blocks (once, old releases) | `bash pipeline/02_release/reblock.sh <version> [<dep>]` | rewrites a release built before blocks (v0.1) in blocks; same content (new builds already write blocks) |
+| Add networks | `bash pipeline/add_networks.sh <version> NET ...` | pools only these networks, adds only their curves to the label model, builds only their windows, finalizes; the other networks' files are not touched |
 | 3. Baselines | `bash pipeline/03_baselines/run.sh <version> [<dep>] [associator ...]` | `results/<version>/baselines/<associator>/`: test-split predictions, scores, `submission.json` (checked with `bepad submit --dry-run`) |
 | 4. Publish | see `docs/source/reference/building.rst` | the release and the baselines' leaderboard entries on Hugging Face |
 

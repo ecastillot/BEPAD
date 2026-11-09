@@ -12,7 +12,7 @@ only the networks you need:
 
 .. code-block:: text
 
-   v0.1/
+   v0.2/
    ├── train/  val/  test/
    │   ├── windows/network=<name>.parquet          one row per window
    │   ├── events/network=<name>.parquet           one row per earthquake in a window
@@ -61,7 +61,7 @@ you (``w.picks``, ``w.stations``, ``w.events``); by hand:
 
    import pandas as pd
 
-   base, wid = "v0.1/test", "tx.test.ev-low__noise-med.00000"
+   base, wid = "v0.2/test", "tx.test.ev-low__noise-med.00000"
    one = [("window_id", "==", wid)]
    picks = pd.read_parquet(f"{base}/picks/network=tx.parquet", filters=one)
    events = pd.read_parquet(f"{base}/events/network=tx.parquet", filters=one)

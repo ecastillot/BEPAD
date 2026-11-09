@@ -19,6 +19,18 @@ One row per window (also as ``metadata/windows_<split>.csv``).
    * - ``window_id``, ``network``, ``split``, ``scenario``
      -
      - identity
+   * - ``selection``, ``n_events_level``, ``noise_level``
+     -
+     - the scenario's three answers: random / sequence / gap; sparse … high; none … extreme
+       (:doc:`../scenarios`)
+   * - ``sequence_type``, ``n_sequences``, ``n_background``
+     -
+     - sequences: mainshock_first / foreshocks / late / two_sequences, number of sequences,
+       earthquakes outside a sequence (other scenarios: empty, 0, every earthquake)
+   * - ``sequence_radius_km``
+     - km
+     - sequences: 3D distance from the mainshock (late: the first earthquake drawn) to its
+       farthest earthquake (other scenarios: empty)
    * - ``seed``, ``attempts``
      -
      - the seed regenerates the window exactly; attempts = draws needed to satisfy the rules
@@ -110,6 +122,10 @@ One row per earthquake in a window. Every column is a label (the associator neve
    * - ``is_edge``
      -
      - true if it started before the window
+   * - ``sequence``, ``role``
+     -
+     - its sequence (0, 1; −1 outside a sequence) and role: mainshock, foreshock, aftershock or
+       background (every earthquake of a random or gap window is background)
    * - ``scorable``
      -
      - always true: every earthquake is scored

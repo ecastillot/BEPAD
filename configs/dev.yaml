@@ -2,11 +2,11 @@
 # networks, and three edge cases.
 release: dev
 data_root: data
-networks: [tx, CM, R08, R05, R06, TUN]   # + edge cases: microseismic (R05), test-only (R06), few S picks (TUN)
+networks: [tx, CM, R08, R05, R06, TUN, R07]   # + edge cases: microseismic (R05), test-only (R06), few S picks (TUN), no magnitudes (R07)
 gallery_networks: [tx, CM, R08]   # example networks drawn by `bepad figures`
 workers: 16
 
-# Windows per NETWORK, split AND scenario (23 scenarios)
+# Windows per NETWORK, split AND scenario (38 scenarios)
 windows_per_scenario: {train: 10, val: 3, test: 5}
 
 # Defaults for every scenario (see bepad/build/config.py WINDOW_DEFAULTS)
@@ -22,16 +22,20 @@ window:
   event_min_s: 0
   event_min_stations: 3
 
-# Difficulty axes. `param` is the window parameter each level sets.
+# Difficulty axes. `param` is the window parameter each level sets (`set`: more options of the axis).
 axes:
   ev:
     param: n_events
     levels: {sparse: [1, 2], low: [3, 5], med: [6, 10], high: [11, 20]}
+  seq:                               # sequences: aftershocks, foreshocks (bepad.build.windows)
+    param: n_events
+    levels: {low: [3, 5], med: [6, 10], high: [11, 20]}
+    set: {sequence: true}
   noise:
     param: noise_ratio               # noise picks / true picks in the window
     levels: {none: 0.0, low: 0.1, med: 0.3, high: 1.0, extreme: 3.0}
 
-grid: [ev, noise]                    # full cartesian product -> 20 scenarios
+grids: [[ev, noise], [seq, noise]]   # full cartesian products -> 20 + 15 scenarios
 
 # One-dimensional sweep over azimuthal gap (how "out of network" events are)
 extra_scenarios:

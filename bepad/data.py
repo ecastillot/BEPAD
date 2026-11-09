@@ -205,7 +205,7 @@ class Release:
 
 
 REPO_ID = "ecastillot/BEPAD"
-RELEASE = "v0.1"                     # the current release (a folder of the Hugging Face dataset)
+RELEASE = "v0.2"                     # the current release (a folder of the Hugging Face dataset)
 # The core test set: every leaderboard entry must run these networks; the default leaderboard
 # view ranks methods by their mean over them. ``"core"`` selects them (``--networks core``).
 CORE_NAME = "BEPAD-10"
@@ -273,7 +273,7 @@ def load(split="test", networks=None, labels=True, release=RELEASE, root=None, r
     if networks is None and window_ids is not None:     # a window_id starts with its network: "tx.test..."
         networks = sorted({w.split(".", 1)[0] for w in window_ids})
     networks = _networks(networks)
-    root = root or os.environ.get("BEPAD_ROOT")        # a local copy, e.g. export BEPAD_ROOT=data/releases/v0.1
+    root = root or os.environ.get("BEPAD_ROOT")        # a local copy, e.g. export BEPAD_ROOT=data/releases/v0.2
     path = Path(root) if root else download(release, splits=(split,), networks=networks, repo_id=repo_id)
     return Release(path).load(split, networks=networks, labels=labels, scenarios=scenarios,
                               max_windows=max_windows, window_ids=window_ids, lazy=lazy)

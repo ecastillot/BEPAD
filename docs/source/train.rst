@@ -15,7 +15,7 @@ associator needs.
    from torch.utils.data import DataLoader
    from bepad.torch import ReleaseWindowDataset, collate_windows
 
-   train = ReleaseWindowDataset(split="train", networks=["tx", "CM"])     # 46,000 windows, 0.6 GB download
+   train = ReleaseWindowDataset(split="train", networks=["tx", "CM"])     # 45,600 windows, 0.8 GB download
    loader = DataLoader(train, batch_size=16, shuffle=True, collate_fn=collate_windows, num_workers=4)
 
    for batch in loader:
@@ -28,7 +28,7 @@ associator needs.
        batch["pick_batch"]      # (N,)  which window each pick belongs to
 
 Leave ``networks`` out to train on every network (the whole train split: 2 million windows, a
-26 GB download, once).
+30 GB download, once).
 
 **Memory.** The windows stay on disk: each one is read when the ``DataLoader`` asks for it, so even
 the whole train split fits any machine (about 1 GB per worker; how:
@@ -101,7 +101,7 @@ takes about 0.1 s, so use ``num_workers``. Download the pool once:
    from bepad.build.pool import list_networks
    from bepad.torch import GeneratedWindowDataset, collate_windows
 
-   scenarios = bepad.open(bepad.download(splits=())).scenarios()     # BEPAD's 23 scenarios (small files only)
+   scenarios = bepad.open(bepad.download(splits=())).scenarios()     # BEPAD's 38 scenarios (small files only)
    gen = GeneratedWindowDataset("BEPAD", networks=list_networks("BEPAD"), length=10_000,  # folder with pool/
                                 scenarios=scenarios)
    loader = DataLoader(gen, batch_size=16, collate_fn=collate_windows, num_workers=4)

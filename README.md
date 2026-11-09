@@ -1,6 +1,6 @@
 # BEPAD — a benchmark dataset for seismic phase association
 
-[![PyPI](https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/bepad/) [![Data v0.1](https://img.shields.io/badge/Data-v0.1-yellow?style=for-the-badge)](https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.1) [![Hugging Face Dataset](https://img.shields.io/badge/HuggingFace-Dataset-yellow?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/ecastillot/BEPAD) [![Read the Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://bepad.readthedocs.io/en/latest/) [![GitHub](https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github)](https://github.com/ecastillot/BEPAD)
+[![PyPI](https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/bepad/) [![Data v0.2](https://img.shields.io/badge/Data-v0.2-yellow?style=for-the-badge)](https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.2) [![Hugging Face Dataset](https://img.shields.io/badge/HuggingFace-Dataset-yellow?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/ecastillot/BEPAD) [![Read the Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://bepad.readthedocs.io/en/latest/) [![GitHub](https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github)](https://github.com/ecastillot/BEPAD)
 
 A phase associator groups the P and S picks of a seismic network into earthquakes. BEPAD gives
 thousands of association problems built from **real earthquakes and real picks**
@@ -33,8 +33,8 @@ bepad submit results/my-method --code associators/my-method    # opens a Hugging
 | | |
 |---|---|
 | **What is in a window** | several overlapping earthquakes on one network, with **real**, **generated** (plausible extra arrivals) and **noise** picks; every pick labelled with its earthquake and a confidence `prob` (≥ 0.5 arrival, 0 noise) |
-| **Difficulty** | 23 scenarios: 1–20 earthquakes per window × 5 noise levels, plus earthquakes outside the network |
-| **Size** | per network and scenario: 1,000 train · 200 val · 100 test windows (23 scenarios) |
+| **Difficulty** | 38 scenarios: which earthquakes (at random, a sequence of aftershocks and foreshocks, or outside the network) × how many (1–20) × how much noise (5 levels) |
+| **Size** | per network and scenario: 600 train · 120 val · 60 test windows (38 scenarios) |
 | **Associator authors** | fill in `bepad.Associator`, run on `test`, submit to the leaderboard — see *Contribute your associator* |
 | **Deep learning** | `bepad.torch.ReleaseWindowDataset` — see *Train a model* |
 
@@ -46,7 +46,7 @@ Install: `pip install bepad` (or `pip install -e .` from this folder; `.[dl]` fo
 ```
 bepad/            load, evaluate, Associator, leaderboard, torch, plots  (what users need)
 bepad/build/      pool, labels, windows, release (how the dataset is built)
-configs/          pool.yaml (quality control, split, labels), v0.1.yaml, dev.yaml (scenarios, sizes)
+configs/          pool.yaml (quality control, split, labels), v0.1.yaml, v0.2.yaml, dev.yaml (scenarios, sizes)
 docs/             Read the Docs sources; docs/gallery/ = the code of every figure
 associators/      contributed associators, one folder each (pyocto = worked example)
 pipeline/         the recipe of a release (SLURM): pool -> release -> baselines (pipeline/README.md)

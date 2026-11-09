@@ -4,9 +4,9 @@ BEPAD
 .. image:: https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white
    :target: https://pypi.org/project/bepad/
    :alt: PyPI version
-.. image:: https://img.shields.io/badge/Data-v0.1-yellow?style=for-the-badge
-   :target: https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.1
-   :alt: Data v0.1
+.. image:: https://img.shields.io/badge/Data-v0.2-yellow?style=for-the-badge
+   :target: https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.2
+   :alt: Data v0.2
 .. image:: https://img.shields.io/badge/HuggingFace-Dataset-yellow?style=for-the-badge&logo=huggingface&logoColor=black
    :target: https://huggingface.co/datasets/ecastillot/BEPAD
    :alt: Hugging Face dataset

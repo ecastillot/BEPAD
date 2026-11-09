@@ -67,6 +67,15 @@ WINDOW_DEFAULTS = {
     "event_min_p": 4,
     "event_min_s": 0,
     "event_min_stations": 3,
+    # sequences (aftershocks, foreshocks): only when a scenario sets sequence: true (bepad.build.windows)
+    "sequence": False,
+    "sequence_types": {"mainshock_first": 1, "foreshocks": 1, "late": 1, "two_sequences": 1},  # weights
+    "background_events": [0, 2],   # independent events added to a sequence window
+    "mainshock_quantile": 0.75,    # a mainshock is among the largest 25% of the network's events
+    "omori_p": 1.0,                # event rate after (before) a mainshock ~ 1 / (t + c) ** p
+    "omori_c_frac": 0.05,          # c, as a fraction of the window length
+    "late_offset": [1, 100],       # late in a sequence: the mainshock was 1-100 window lengths before
+    "anchor_tries": 30,
 }
 
 RELEASE_DEFAULTS = {
@@ -79,6 +88,7 @@ RELEASE_DEFAULTS = {
     "window": WINDOW_DEFAULTS,
     "axes": {},
     "grid": [],
+    "grids": [],
     "extra_scenarios": {},
     "workers": 1,
 }

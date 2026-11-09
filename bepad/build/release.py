@@ -55,21 +55,42 @@ def release_dir(cfg) -> Path:
 
 
 def expand_scenarios(cfg):
-    """{scenario_name: full window config}, in a fixed order."""
+    """{scenario_name: full window config}, in a fixed order.
+
+    ``grids``: a list of axis lists, each the full cartesian product of its axes' levels (``grid``:
+    one such list). An axis level sets the axis ``param``, plus the axis' ``set`` options (e.g.
+    ``sequence: true``). Then ``extra_scenarios``. Each config also gets ``n_events_level`` and
+    ``noise_level``: the level of its n_events and noise_ratio (columns of the windows table).
+    """
     base = {**WINDOW_DEFAULTS, **cfg.get("window", {})}
     axes = cfg.get("axes", {})
     out = {}
-    if cfg.get("grid"):
-        names = cfg["grid"]
+    grids = list(cfg.get("grids") or []) + ([cfg["grid"]] if cfg.get("grid") else [])
+    for names in grids:
         level_lists = [list(axes[a]["levels"].items()) for a in names]
         for combo in itertools.product(*level_lists):
             name = "__".join(f"{a}-{lvl}" for a, (lvl, _) in zip(names, combo))
-            over = {axes[a]["param"]: v for a, (_, v) in zip(names, combo)}
+            over = {}
+            for a, (_, v) in zip(names, combo):
+                over.update(axes[a].get("set") or {})
+                over[axes[a]["param"]] = v
             out[name] = {**base, **over}
     for name, over in (cfg.get("extra_scenarios") or {}).items():
         out[name] = {**base, **over}
     if not out:
         out["default"] = base
+
+    def level(param, value):
+        for ax in axes.values():
+            if ax["param"] == param:
+                for lvl, v in ax["levels"].items():
+                    if v == value:
+                        return lvl
+        return None
+
+    for c in out.values():
+        c["n_events_level"] = level("n_events", c["n_events"])
+        c["noise_level"] = level("noise_ratio", c["noise_ratio"])
     return out
 
 

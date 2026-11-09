@@ -86,7 +86,7 @@ the same time), ``noise_ratio`` (noise picks per real pick), ``gap_max_deg`` (az
 
    rel = bepad.open(bepad.download(splits=("test",), networks=["AEIC"]))
    ws = rel.table("test", "window_stations")
-   ids = ws.loc[ws.station == "AK.PS07", "window_id"].unique()    # 699 of the 2,300 AEIC windows
+   ids = ws.loc[ws.station == "AK.PS07", "window_id"].unique()    # 613 of the 2,280 AEIC windows
    test = bepad.load("test", window_ids=ids)
 
 The stations that recorded the earthquakes are in the picks (``w.picks.station``); their number per
@@ -106,7 +106,7 @@ Every table is a plain Parquet file, readable with pandas (and ``huggingface_hub
 
    import pandas as pd
 
-   base = "hf://datasets/ecastillot/BEPAD/v0.1"
+   base = "hf://datasets/ecastillot/BEPAD/v0.2"
    picks = pd.read_parquet(f"{base}/test/picks/network=tx.parquet")
    windows = pd.read_csv(f"{base}/metadata/windows_test.csv")
 

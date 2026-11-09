@@ -1,7 +1,7 @@
 Dataset statistics
 ==================
 
-What is inside BEPAD v0.1: how many windows and picks, what the windows look like, and the
+What is inside BEPAD v0.2: how many windows and picks, what the windows look like, and the
 earthquakes, stations and picks they are made of. Every figure is drawn from the release tables
 (``bepad.stats`` computes the tables, ``bepad.plots`` draws them), so it describes exactly the
 earthquakes and picks that BEPAD contains. Statistics of the full source catalogs, before BEPAD's
@@ -10,51 +10,51 @@ selection, are in the `UTDQuake documentation <https://utdquake.readthedocs.io>`
 Data
 ----
 
-Every network has the same number of windows in each of the 23 scenarios. BEPAD v0.1 has 91
-networks:
+Every network has the same number of windows in each of the 38 scenarios (:doc:`../scenarios`).
+BEPAD v0.2 has 91 networks:
 
 .. list-table::
    :header-rows: 1
 
    * - Split
      - Windows per network and scenario
-     - Windows per network (× 23 scenarios)
+     - Windows per network (× 38 scenarios)
      - Windows, all networks
      - Picks, all networks
      - Use
    * - ``train``
-     - 1,000
-     - 23,000
-     - 2,068,000 (90 networks)
-     - 793 million
+     - 600
+     - 22,800
+     - 2,050,470 (90 networks)
+     - 930 million
      - training models
    * - ``val``
-     - 200
-     - 4,600
-     - 412,800 (90 networks)
-     - 161 million
+     - 120
+     - 4,560
+     - 408,876 (90 networks)
+     - 186 million
      - tuning settings
    * - ``test``
-     - 100
-     - 2,300
-     - 208,900 (91 networks)
-     - 83 million
+     - 60
+     - 2,280
+     - 207,197 (91 networks)
+     - 96 million
      - reporting results
    * - **total**
-     - 1,300
-     - 29,900
-     - **2,689,700**
-     - **1,036 million**
+     - 780
+     - 29,640
+     - **2,666,543**
+     - **1,212 million**
      -
 
-Networks with fewer than 200 earthquakes are test only (in v0.1: ESPOO, ``R06``), so train and val
-have 90 networks. A few networks cannot make every gap scenario (no earthquakes with that gap) and
-have fewer windows; the exact counts are in ``manifest.json`` and ``metadata/networks.csv``.
+Networks with fewer than 200 earthquakes are test only (ESPOO, ``R06``), so train and val
+have 90 networks. A few networks cannot make every window (no earthquakes with that gap, or not enough nearby
+earthquakes for a long sequence) and have fewer windows; the exact counts are in ``manifest.json`` and ``metadata/networks.csv``.
 
 Each earthquake belongs to exactly one split (70 / 10 / 20 % of the earthquakes of each network,
 chosen at random).
 
-Picks count real, generated and noise picks. About 34 GB in all (Parquet; train 26 GB). You never
+Picks count real, generated and noise picks. About 40 GB in all (Parquet; train 30 GB). You never
 need all of it at once: :doc:`../get_data` shows how to download and load only some networks or
 windows.
 

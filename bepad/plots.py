@@ -147,7 +147,9 @@ def plot_window(w, model=None, ax=None, show_bands=True, legend=True, title=None
             g = ((pe.phase == ph) & (pe.pick_type == "generated")).to_numpy()
             ax.scatter(pe.t_rel_s[g], y[g], s=12, marker="D", lw=0.6, alpha=alpha, zorder=3,
                        facecolors="none", edgecolors=c)
-        ax.scatter([e.t0_rel_s], [0], marker="*", s=55, color=c, alpha=alpha, edgecolors="white", lw=0.4, zorder=4)
+        big = e.get("role") == "mainshock"                 # sequences: the mainshock is a larger star
+        ax.scatter([e.t0_rel_s], [0], marker="*", s=140 if big else 55, color=c, alpha=alpha,
+                   edgecolors=INK if big else "white", lw=0.6 if big else 0.4, zorder=5 if big else 4)
         ax.annotate(str(k), (e.t0_rel_s, 0), xytext=(0, 3.5), textcoords="offset points", ha="center",
                     fontsize=5.5, color=INK)
 
@@ -515,6 +517,39 @@ def plot_gap_sweep(split, network, scenarios=("gap-000-090", "gap-090-180", "gap
     return _finish(fig, save_path, dpi)
 
 
+SEQUENCE_TITLES = {"mainshock_first": "Mainshock first", "foreshocks": "Foreshocks, then mainshock",
+                   "late": "Late in a sequence (no mainshock)", "two_sequences": "Two sequences"}
+
+
+def plot_sequence_types(split, network, scenario="seq-med__noise-low", save_path=None, dpi=DPI):
+    """Sequence scenarios: the first window of each sequence type of ``scenario``, map (top) and
+    distance-time (bottom). Large stars: mainshocks."""
+    w_ = split.windows
+    w_ = w_[(w_.network == network) & (w_.scenario == scenario)].sort_values("window_id")
+    types = [t for t in SEQUENCE_TITLES if (w_.sequence_type == t).any()]
+    if not types:
+        return None
+    fig, axes = plt.subplots(2, len(types), figsize=(COL2, 4.6), gridspec_kw={"height_ratios": [1.1, 1]},
+                             squeeze=False)
+    for j, t in enumerate(types):
+        row = w_[w_.sequence_type == t].iloc[0]
+        w = split[row.window_id]
+        plot_window_map(w, ax=axes[0][j], legend=(j == 0))
+        axes[0][j].set_title(SEQUENCE_TITLES[t], loc="left", fontsize=6.5)
+        plot_window(w, ax=axes[1][j], legend=False, show_bands=False)
+        roles = w.events.role.value_counts()
+        parts = [f"{roles[k]} {k}{'s' if roles[k] > 1 and k != 'background' else ''}"
+                 for k in ("mainshock", "foreshock", "aftershock", "background") if k in roles]
+        axes[1][j].set_title(", ".join(parts[:2]) + ("\n" + ", ".join(parts[2:]) if parts[2:] else ""),
+                             loc="left", fontsize=5.5)
+        _window_id(axes[1][j], row.window_id)
+        if j:
+            axes[0][j].set_ylabel("")
+            axes[1][j].set_ylabel("")
+    fig.tight_layout()
+    return _finish(fig, save_path, dpi)
+
+
 def plot_label_model(model, magnitudes=range(0, 8), save_path=None, dpi=DPI):
     """(a) prob of a real pick vs distance per magnitude; (b) generated-pick prob vs z;
     (c) timing uncertainty sigma(r) and the band half-width."""
@@ -566,8 +601,10 @@ def plot_difficulty(split, ev_levels=("sparse", "low", "med", "high"),
     (a) events active at once, (b) real picks arriving during overlap, (c) closest origins,
     (d) picks per window, (e) prob per pick type, (f) distance of each pick type to the nearest event."""
     w = split.windows.copy()
-    w["ev"] = w.scenario.map(lambda s: _level(s, "ev"))
+    w["ev"] = w.scenario.map(lambda s: _level(s, "ev") or (f"seq {_level(s, 'seq')}" if _level(s, "seq") else None))
     w["noise"] = w.scenario.map(lambda s: _level(s, "noise"))
+    seq_levels = tuple(f"seq {lv}" for lv in ("low", "med", "high") if (w.ev == f"seq {lv}").any())
+    ev_levels = tuple(ev_levels) + seq_levels             # sequences next to random windows of the same count
     w["overlap"] = w.window_id.map(_overlap_fraction(split.picks, split.events))
     fig, axes = plt.subplots(2, 3, figsize=(COL2, 4.4))
 
@@ -581,7 +618,7 @@ def plot_difficulty(split, ev_levels=("sparse", "low", "med", "high"),
                 line.set(color=INK2, lw=0.6)
         for line in b["medians"]:
             line.set(color=INK, lw=1)
-        ax.set_xticks(range(len(order)), order)
+        ax.set_xticks(range(len(order)), [o.replace(" ", "\n") for o in order])
         ax.set_ylabel(ylabel)
         if log:
             ax.set_yscale("log")
@@ -660,18 +697,20 @@ def plot_scores(summary_by_scenario, metric="event_f1", ev_levels=("sparse", "lo
                 noise_levels=("none", "low", "med", "high", "extreme"), title=None, save_path=None, dpi=DPI):
     """Heatmap of one metric over the events x noise grid (from ``Report.by_scenario``)."""
     s = summary_by_scenario.copy()
-    s["ev"] = s.scenario.map(lambda x: _level(x, "ev"))
+    s["ev"] = s.scenario.map(lambda x: _level(x, "ev") or (f"seq {_level(x, 'seq')}" if _level(x, "seq") else None))
     s["noise"] = s.scenario.map(lambda x: _level(x, "noise"))
+    ev_levels = tuple(ev_levels) + tuple(f"seq {lv}" for lv in ("low", "med", "high") if (s.ev == f"seq {lv}").any())
     m = s.pivot_table(index="noise", columns="ev", values=metric).reindex(index=list(noise_levels),
                                                                           columns=list(ev_levels))
-    fig, ax = plt.subplots(figsize=(COL1, 2.3))
+    fig, ax = plt.subplots(figsize=(COL1 * (1.5 if len(ev_levels) > 4 else 1), 2.3))
     im = ax.imshow(m.to_numpy(float), cmap=PROB_CMAP, vmin=0, vmax=1, aspect="auto")
     for (i, j), v in np.ndenumerate(m.to_numpy(float)):
         if v == v:
             ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=6, color="white" if v > 0.55 else INK)
-    ax.set_xticks(range(len(ev_levels)), ev_levels)
+    ax.set_xticks(range(len(ev_levels)), [e.replace(" ", "\n") for e in ev_levels])
     ax.set_yticks(range(len(noise_levels)), noise_levels)
-    ax.set(xlabel="Events per window", ylabel="Noise level")
+    ax.set(xlabel="Events per window (random, then sequences)" if len(ev_levels) > 4 else "Events per window",
+           ylabel="Noise level")
     ax.grid(False)
     ax.set_title(title or metric, loc="left")
     fig.colorbar(im, ax=ax, fraction=0.05, pad=0.02)
@@ -952,6 +991,8 @@ def release_gallery(release_dir, cfg, out_dir=None, networks=None, split="test")
         rows = [lv for lv in noise_levels if lv in ("none", "med", "extreme")] or list(noise_levels)
         plot_scenario_grid(s, n, ev_levels, rows, save_path=out / f"scenarios_{n}.png")
         plot_gap_sweep(s, n, save_path=out / f"gap_sweep_{n}.png")
+        if "sequence_type" in s.windows and s.windows.sequence_type.notna().any():
+            plot_sequence_types(s, n, save_path=out / f"sequences_{n}.png")
         wid = f"{n}.{split}.ev-low__noise-med.00000"
         if wid in set(s.windows.window_id):
             w = s[wid]

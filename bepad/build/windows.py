@@ -4,7 +4,9 @@ A window is a pure function of (pool, label model, window config, seed).
 
     1. events     n events of one split, all within +/- event_time_neighborhood_days
                   of an anchor event (so the station geometry existed at that time);
-                  optionally one edge event starting before t = 0
+                  optionally one edge event starting before t = 0.
+                  Sequence scenarios (sequence: true): a sequence is an anchor and its nearest
+                  events in 3D (_sample_sequence), timed like aftershocks (_sequence_times)
     2. stations   every pool station that picked any event in that period
     3. timeline   length = length_factor x longest event duration; origins uniform in
                   the first (1 - tail_frac) of the window; the end is extended so every
@@ -59,6 +61,13 @@ class NetworkIndex:
         self.stations = stations.set_index("station")
         mag = pd.to_numeric(self.events["magnitude"], errors="coerce")
         self.magnitude = mag.fillna(label_model.median_magnitude(network)).to_numpy(float)
+        # event size for sequences: the magnitude, or, in a network without usable magnitudes
+        # (< 50% of events with one, or < 5 distinct values), the number of stations that recorded it
+        usable = mag.notna().mean() >= 0.5 and mag.nunique() >= 5
+        self.size_by = "magnitude" if usable else "stations"
+        size = mag if usable else pd.to_numeric(self.events["n_stations"], errors="coerce")
+        self.size = size.to_numpy(float)
+        self.xyz = _xyz(self.events)
 
         picks = picks.merge(self.events[["event_id", "time"]].rename(columns={"time": "event_time"}),
                             on="event_id", how="inner")
@@ -80,6 +89,13 @@ class NetworkIndex:
         lo, hi = np.searchsorted(self.pk_ev_t, [t - days * 86400, t + days * 86400])
         present = np.bincount(self.pk_station[lo:hi], minlength=len(self.station_names)) > 0
         return np.asarray(self.station_names, dtype=object)[present]
+
+
+def _xyz(events):
+    """Earth-centred coordinates (km) of the hypocentres."""
+    lat, lon = np.radians(events["latitude"].to_numpy(float)), np.radians(events["longitude"].to_numpy(float))
+    r = 6371.0 - events["depth"].to_numpy(float) / 1e3
+    return np.c_[r * np.cos(lat) * np.cos(lon), r * np.cos(lat) * np.sin(lon), r * np.sin(lat)]
 
 
 # ----------------------------------------------------------------------
@@ -114,6 +130,164 @@ def _sample_events(idx, split, cfg, rng):
     chosen = np.concatenate([[anchor], others]).astype(int)
     edge = chosen[n] if (want_edge and len(chosen) > n) else None
     return chosen[:n], edge, anchor, days
+
+
+# ----------------------------------------------------------------------
+# Sequences: a mainshock (or any event, late in a sequence) and its nearest events in 3D
+SEQUENCE_TYPES = ("mainshock_first", "foreshocks", "late", "two_sequences")
+
+
+def _sample_sequence(idx, split, cfg, rng):
+    """Events of a sequence window -> (rows, edge, anchor, days, seq) or None.
+
+    rows: the events of the window (sequences first, then background events); seq: the type,
+    {row: (sequence, role)} and the 3D radius of each sequence. A mainshock is among the largest
+    ``mainshock_quantile`` of the split's events and its sequence is its nearest SMALLER events
+    within +/- event_time_neighborhood_days. ``late``: any event and its nearest events (the
+    mainshock is not in the window). If the drawn type cannot be made, the others are tried.
+    """
+    cand = np.flatnonzero(_candidate_mask(idx.events, split, cfg))
+    if len(cand) == 0:
+        return None
+    lo_n, hi_n = cfg["n_events"]
+    n = int(rng.integers(lo_n, hi_n + 1))
+    lo_b, hi_b = cfg["background_events"]
+    n_bg = max(0, min(int(rng.integers(lo_b, hi_b + 1)), n - 2))
+    n_seq = n - n_bg
+    want_edge = rng.random() < cfg["edge_event_prob"]
+    days = cfg["event_time_neighborhood_days"]
+
+    size = idx.size
+    size_lo = np.where(np.isfinite(size), size, -np.inf)       # no size: can be a smaller event
+    fin = cand[np.isfinite(size[cand])]
+    big = fin[size[fin] >= np.quantile(size[fin], cfg["mainshock_quantile"])] if len(fin) else fin
+
+    def cluster(anchor, k, smaller, exclude=()):
+        lo, hi = idx.neighborhood(idx.ev_t[anchor], days)
+        pool = cand[(cand >= lo) & (cand < hi) & (cand != anchor)]
+        if len(exclude):
+            pool = pool[~np.isin(pool, exclude)]
+        if smaller:
+            pool = pool[size_lo[pool] < size[anchor]]
+        if len(pool) < k:
+            return None
+        d = np.linalg.norm(idx.xyz[pool] - idx.xyz[anchor], axis=1)
+        o = np.argsort(d, kind="stable")[:k]
+        return pool[o], d[o]
+
+    w = {t: float(v) for t, v in cfg["sequence_types"].items() if v > 0 and (t != "two_sequences" or n_seq >= 4)}
+    if not w:
+        return None
+    names = list(w)
+    first = rng.choice(len(names), p=np.array(list(w.values())) / sum(w.values()))
+    order = [names[first]] + [names[i] for i in rng.permutation(len(names)) if i != first]
+    for stype in order:
+        seqs = None
+        for _ in range(cfg["anchor_tries"]):
+            if stype == "late":
+                a = int(rng.choice(cand))
+                c = cluster(a, n_seq - 1, smaller=False)
+                if c is not None:
+                    seqs = [(a, *c)]
+            elif stype == "two_sequences":
+                if not len(big):
+                    break
+                n1 = int(rng.integers(2, n_seq - 1))
+                a1 = int(rng.choice(big))
+                c1 = cluster(a1, n1 - 1, smaller=True)
+                if c1 is None:
+                    continue
+                r1 = float(c1[1].max()) if len(c1[1]) else 0.0
+                lo, hi = idx.neighborhood(idx.ev_t[a1], days)
+                far = big[(big >= lo) & (big < hi) & ~np.isin(big, np.r_[a1, c1[0]])]
+                far = far[np.linalg.norm(idx.xyz[far] - idx.xyz[a1], axis=1) > 2 * r1]
+                if not len(far):
+                    continue
+                a2 = int(rng.choice(far))
+                c2 = cluster(a2, n_seq - n1 - 1, smaller=True, exclude=np.r_[a1, c1[0]])
+                if c2 is not None:
+                    seqs = [(a1, *c1), (a2, *c2)]
+            else:
+                if not len(big):
+                    break
+                a = int(rng.choice(big))
+                c = cluster(a, n_seq - 1, smaller=True)
+                if c is not None:
+                    seqs = [(a, *c)]
+            if seqs is not None:
+                break
+        if seqs is not None:
+            break
+    else:
+        return None
+    if seqs is None:
+        return None
+
+    rows, members = [], {}
+    for k, (a, nb, _) in enumerate(seqs):
+        role = "aftershock" if stype == "late" else "mainshock"
+        rows.append(a); members[a] = (k, role)
+        for r in nb:
+            rows.append(int(r)); members[int(r)] = (k, "aftershock")
+    if stype == "foreshocks":                               # the first nearest events become foreshocks
+        nb = [r for r in rows if members[r][1] == "aftershock"]
+        n_fore = int(rng.integers(1, max(1, int(0.4 * len(nb))) + 1)) if nb else 0
+        for r in rng.choice(nb, size=n_fore, replace=False) if n_fore else []:
+            members[int(r)] = (0, "foreshock")
+    anchor = seqs[0][0]
+    lo, hi = idx.neighborhood(idx.ev_t[anchor], days)
+    rest = cand[(cand >= lo) & (cand < hi) & ~np.isin(cand, rows)]
+    k_bg = min(n_bg + int(want_edge), len(rest))
+    bg = [int(r) for r in rng.choice(rest, size=k_bg, replace=False)] if k_bg else []
+    edge = bg.pop() if (want_edge and bg) else None
+    for r in bg + ([edge] if edge is not None else []):
+        members[r] = (-1, "background")
+    rows += bg
+    radius = [float(d.max()) if len(d) else 0.0 for _, _, d in seqs]
+    seq = {"type": stype, "members": members, "radius_km": radius, "n_sequences": len(seqs)}
+    return np.array(rows, int), edge, anchor, days, seq
+
+
+def _omori(rng, a, b, c, p, size):
+    """Times after a mainshock in [a, b], with rate ~ 1 / (t + c) ** p."""
+    u = rng.random(size)
+    if abs(p - 1) < 1e-9:
+        return (a + c) * ((b + c) / (a + c)) ** u - c
+    g = lambda t: (t + c) ** (1 - p)
+    return (g(a) + u * (g(b) - g(a))) ** (1 / (1 - p)) - c
+
+
+def _sequence_times(rows, seq, length, cfg, rng):
+    """Origin times (s) of ``rows`` in a window of ``length`` s.
+
+    mainshock_first: the mainshock in the first 10% of the window, aftershocks after it.
+    foreshocks: the mainshock between 30% and 70%; foreshocks before it (more and more frequent),
+    aftershocks after it. late: the mainshock was 1-100 window lengths before the window.
+    two_sequences: the first mainshock in the first 10%, the second between 30% and 70%.
+    Background events: uniform. Rate after (before) a mainshock ~ 1 / (t + c) ** p.
+    """
+    T = (1 - cfg["tail_frac"]) * length
+    c, p = cfg["omori_c_frac"] * length, cfg["omori_p"]
+    t0 = np.empty(len(rows))
+    role = np.array([seq["members"][r][1] for r in rows])
+    sid = np.array([seq["members"][r][0] for r in rows])
+    stype = seq["type"]
+    for k in range(seq["n_sequences"]):
+        here = sid == k
+        if stype == "late":
+            lo_d, hi_d = cfg["late_offset"]
+            D = length * float(np.exp(rng.uniform(np.log(lo_d), np.log(hi_d))))
+            t0[here] = _omori(rng, D, D + T, c, p, here.sum()) - D
+            continue
+        tm = rng.uniform(0, 0.1 * T) if (k == 0 and stype != "foreshocks") else rng.uniform(0.3 * T, 0.7 * T)
+        t0[here & (role == "mainshock")] = tm
+        a_ = here & (role == "aftershock")
+        t0[a_] = tm + _omori(rng, 0.0, T - tm, c, p, a_.sum())
+        f_ = here & (role == "foreshock")
+        t0[f_] = tm - _omori(rng, 0.0, tm, c, p, f_.sum())
+    b_ = sid == -1
+    t0[b_] = rng.uniform(0, T, b_.sum())
+    return t0
 
 
 def _overlap_stats(first, last):
@@ -186,10 +360,17 @@ def generate_window(idx: NetworkIndex, split, cfg, seed, window_id, scenario="cu
 def _generate_once(idx: NetworkIndex, split, cfg, seed, window_id, scenario="custom"):
     rng = np.random.default_rng(seed)
     model = idx.model
-    sampled = _sample_events(idx, split, cfg, rng)
-    if sampled is None:
-        return None
-    main, edge, anchor, days_used = sampled
+    seq = None
+    if cfg.get("sequence"):
+        sampled = _sample_sequence(idx, split, cfg, rng)
+        if sampled is None:
+            return None
+        main, edge, anchor, days_used, seq = sampled
+    else:
+        sampled = _sample_events(idx, split, cfg, rng)
+        if sampled is None:
+            return None
+        main, edge, anchor, days_used = sampled
 
     # --- stations ------------------------------------------------------------
     stations = idx.active_stations(idx.ev_t[anchor], days_used)
@@ -231,8 +412,11 @@ def _generate_once(idx: NetworkIndex, split, cfg, seed, window_id, scenario="cus
 
     # --- timeline ---------------------------------------------------------------
     length = cfg["length_factor"] * float(dur[:n_main].max()) if cfg["length_s"] == "auto" else float(cfg["length_s"])
-    t0 = np.empty(n_main)
-    t0[rng.permutation(n_main)] = np.sort(rng.uniform(0, (1 - cfg["tail_frac"]) * length, n_main))
+    if seq is None:
+        t0 = np.empty(n_main)
+        t0[rng.permutation(n_main)] = np.sort(rng.uniform(0, (1 - cfg["tail_frac"]) * length, n_main))
+    else:
+        t0 = _sequence_times(list(main), seq, length, cfg, rng)
     end = max(length, float(np.max(t0 + nth[:n_main])))
     if edge is not None:
         t0 = np.append(t0, -rng.uniform(0, edge_shift))
@@ -348,6 +532,8 @@ def _generate_once(idx: NetworkIndex, split, cfg, seed, window_id, scenario="cus
             "first_pick_s": pe["t_rel_s"].min() if len(pe) else np.nan,
             "last_pick_s": pe["t_rel_s"].max() if len(pe) else np.nan,
             "is_edge": rows[j] == edge,
+            "sequence": seq["members"][rows[j]][0] if seq else -1,
+            "role": seq["members"][rows[j]][1] if seq else "background",
             "scorable": (int((pr["phase"] == "P").sum()) >= cfg["event_min_p"]
                          and int((pr["phase"] == "S").sum()) >= cfg["event_min_s"]
                          and len(sta) >= cfg["event_min_stations"]),
@@ -366,6 +552,12 @@ def _generate_once(idx: NetworkIndex, split, cfg, seed, window_id, scenario="cus
     src_t = pd.to_datetime(events["src_origin_time"])
     window = {
         "window_id": window_id, "network": idx.network, "split": split, "scenario": scenario, "seed": int(seed),
+        "selection": "sequence" if seq else ("gap" if cfg.get("gap_range") is not None else "random"),
+        "n_events_level": cfg.get("n_events_level"), "noise_level": cfg.get("noise_level"),
+        "sequence_type": seq["type"] if seq else None,
+        "n_sequences": seq["n_sequences"] if seq else 0,
+        "n_background": int((events["role"] == "background").sum()) if seq else len(events),
+        "sequence_radius_km": max(seq["radius_km"]) if seq else np.nan,
         "t_start": t_ref, "length_s": end,
         "n_stations": len(station_set), "n_active_stations": int(real_pk["station"].nunique()),
         "n_events": len(events), "n_scorable_events": len(sc), "n_edge_events": int(events["is_edge"].sum()),

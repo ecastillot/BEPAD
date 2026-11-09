@@ -1,6 +1,22 @@
 Changelog
 =========
 
+0.2.0 (BEPAD v0.2)
+------------------
+
+Same networks and earthquakes as v0.1 (UTDQuake 1.0, Hugging Face commit ``8524c6f0``).
+
+* **Sequences**: 15 new scenarios ``seq-{low,med,high}__noise-{none … extreme}`` (38 in total).
+  A sequence is an earthquake and its nearest earthquakes in 3D, timed with Omori's law; four
+  types (mainshock first, foreshocks, late in a sequence, two sequences) and 0–2 background
+  earthquakes (:doc:`scenarios`).
+* 600 train, 120 val and 60 test windows per network and scenario (was 1,000 / 200 / 100). Same
+  seeds as v0.1: windows 0–59 of the 23 v0.1 scenarios are the same windows as in v0.1.
+* New columns. Windows: ``selection``, ``n_events_level``, ``noise_level``, ``sequence_type``,
+  ``n_sequences``, ``n_background``, ``sequence_radius_km``. Events: ``sequence``, ``role``.
+* ``plot_sequence_types``; mainshocks are drawn as larger stars.
+* ``pipeline/add_networks.sh``: add networks to a release without changing the others.
+
 0.1.3
 -----
 

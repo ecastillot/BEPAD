@@ -124,7 +124,7 @@ This command:
 #. **shows your row in the leaderboard table**, next to the current entries, exactly as it will
    be published;
 #. opens a **pull request** on the BEPAD Hugging Face repository, adding
-   ``leaderboard/v0.1/my-method/`` (your results) and ``associators/my-method/`` (your code).
+   ``leaderboard/v0.2/my-method/`` (your results) and ``associators/my-method/`` (your code).
 
 It needs a free Hugging Face account and, once, ``hf auth login``. Without a login it prints the
 steps to upload the two folders from the website instead, which also opens a pull request.
@@ -134,10 +134,10 @@ For example, the preview of ``eqt-utils_simple`` starts with its BEPAD-10 row:
 
 .. code-block:: text
 
-   ## v0.1 · BEPAD-10 test (R05, R07, R01, nc, tx, JMA, CM, R09, ak, NOA)
+   ## v0.2 · BEPAD-10 test (R05, R07, R01, nc, tx, JMA, CM, R09, ak, NOA)
 
    | # | Method               | Type      | Training | Event F1 | Pick F1 | Noise rej. | Merge | Split | Epicentre err. (km) | Depth err. (km) | s/window | Windows | Networks |
-   | 1 | eqt-utils_simple 0.1 | classical | none     | 0.535    | 0.309   | 0.007      | 0.612 | 0.450 | 147.8               | 27.3            | 0.15     | 22800   | 10/10    |
+   | 1 | eqt-utils_simple 0.1 | classical | none     | 0.514    | 0.278   | 0.005      | 0.644 | 0.467 | 119.0               | 29.1            | 0.16     | 22680   | 10/10    |
 
 then one table per network it ran.
 

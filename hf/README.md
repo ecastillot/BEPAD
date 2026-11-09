@@ -12,31 +12,31 @@ configs:
   - config_name: windows
     default: true
     data_files:
-      - {split: train, path: "v0.1/train/windows/*.parquet"}
-      - {split: validation, path: "v0.1/val/windows/*.parquet"}
-      - {split: test, path: "v0.1/test/windows/*.parquet"}
+      - {split: train, path: "v0.2/train/windows/*.parquet"}
+      - {split: validation, path: "v0.2/val/windows/*.parquet"}
+      - {split: test, path: "v0.2/test/windows/*.parquet"}
   - config_name: events
     data_files:
-      - {split: train, path: "v0.1/train/events/*.parquet"}
-      - {split: validation, path: "v0.1/val/events/*.parquet"}
-      - {split: test, path: "v0.1/test/events/*.parquet"}
+      - {split: train, path: "v0.2/train/events/*.parquet"}
+      - {split: validation, path: "v0.2/val/events/*.parquet"}
+      - {split: test, path: "v0.2/test/events/*.parquet"}
   - config_name: stations
-    data_files: "v0.1/stations.parquet"
+    data_files: "v0.2/stations.parquet"
   - config_name: window_stations
     data_files:
-      - {split: train, path: "v0.1/train/window_stations/*.parquet"}
-      - {split: validation, path: "v0.1/val/window_stations/*.parquet"}
-      - {split: test, path: "v0.1/test/window_stations/*.parquet"}
+      - {split: train, path: "v0.2/train/window_stations/*.parquet"}
+      - {split: validation, path: "v0.2/val/window_stations/*.parquet"}
+      - {split: test, path: "v0.2/test/window_stations/*.parquet"}
   - config_name: picks
     data_files:
-      - {split: train, path: "v0.1/train/picks/*.parquet"}
-      - {split: validation, path: "v0.1/val/picks/*.parquet"}
-      - {split: test, path: "v0.1/test/picks/*.parquet"}
+      - {split: train, path: "v0.2/train/picks/*.parquet"}
+      - {split: validation, path: "v0.2/val/picks/*.parquet"}
+      - {split: test, path: "v0.2/test/picks/*.parquet"}
 ---
 
 # BEPAD — Benchmark Earthquake Phase Association Dataset
 
-[![PyPI](https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/bepad/) [![Data v0.1](https://img.shields.io/badge/Data-v0.1-yellow?style=for-the-badge)](https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.1) [![Read the Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://bepad.readthedocs.io/en/latest/) [![GitHub](https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github)](https://github.com/ecastillot/BEPAD)
+[![PyPI](https://img.shields.io/pypi/v/bepad?color=orange&label=PyPI&style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/bepad/) [![Data v0.2](https://img.shields.io/badge/Data-v0.2-yellow?style=for-the-badge)](https://huggingface.co/datasets/ecastillot/BEPAD/tree/main/v0.2) [![Read the Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://bepad.readthedocs.io/en/latest/) [![GitHub](https://img.shields.io/badge/GitHub-BEPAD-black?style=for-the-badge&logo=github)](https://github.com/ecastillot/BEPAD)
 
 Thousands of phase-association problems built from **real earthquakes and real picks** of
 [UTDQuake](https://huggingface.co/datasets/ecastillot/UTDQuake). Each **window** holds several
@@ -48,7 +48,7 @@ answer (earthquake) for every pick.
 *One window (Texas network): (a) earthquakes and stations, (b) every pick at its distance from
 its earthquake, (c) picks by type. The associator's job is to find which picks belong together.*
 
-**v0.1** is built from UTDQuake 1.0 (Hugging Face commit `8524c6f0`): every seismic network, named by
+**v0.2** (current) is built from UTDQuake 1.0 (Hugging Face commit `8524c6f0`): every seismic network, named by
 its UTDQuake code (`tx`, `CM`, `R08` ...). A station is `NET.STA` (FDSN network and station code).
 
 ## Quick start
@@ -65,33 +65,35 @@ Without the package:
 
 ```python
 import pandas as pd
-picks = pd.read_parquet("hf://datasets/ecastillot/BEPAD/v0.1/test/picks/network=tx.parquet")
+picks = pd.read_parquet("hf://datasets/ecastillot/BEPAD/v0.2/test/picks/network=tx.parquet")
 ```
 
 ## Content
 
 | Folder | What |
 |---|---|
-| `v0.1/<split>/windows` | one row per window: network, scenario, counts, difficulty, seed |
-| `v0.1/<split>/events` | the earthquakes of each window (origin, location, magnitude, scorable) |
-| `v0.1/stations.parquet` | station coordinates; `station` = `NET.STA`, `network` = UTDQuake network |
-| `v0.1/<split>/window_stations` | the stations available in each window (`window_id`, `station`); coordinates in `stations.parquet` |
-| `v0.1/<split>/picks` | one row per pick: station, phase, time; labels `event_idx` (−1 noise), `pick_type` (real / generated / noise), `real`, `prob` (optional confidence for training, from detectability) |
-| `v0.1/metadata/` | window statistics as CSV |
-| `v0.1/label_model.json` | predicted arrivals, timing uncertainty and `prob` model |
+| `v0.2/<split>/windows` | one row per window: network, scenario (which earthquakes, how many, noise), counts, difficulty, seed |
+| `v0.2/<split>/events` | the earthquakes of each window (origin, location, magnitude, sequence and role) |
+| `v0.2/stations.parquet` | station coordinates; `station` = `NET.STA`, `network` = UTDQuake network |
+| `v0.2/<split>/window_stations` | the stations available in each window (`window_id`, `station`); coordinates in `stations.parquet` |
+| `v0.2/<split>/picks` | one row per pick: station, phase, time; labels `event_idx` (−1 noise), `pick_type` (real / generated / noise), `real`, `prob` (optional confidence for training, from detectability) |
+| `v0.2/metadata/` | window statistics as CSV |
+| `v0.2/label_model.json` | predicted arrivals, timing uncertainty and `prob` model |
+| `v0.1/` | the previous release (23 scenarios, no sequences), same layout |
 | `pool/` | the quality-controlled earthquakes and picks (for generating new training windows) |
 | `associators/<name>/` | contributed associators (code + parameters), runnable with `bepad run` |
 | `leaderboard/` | submitted results (scores + predictions) and the tables in `leaderboard/README.md` |
 
-Per network and scenario: 1,000 train, 200 val and 100 test windows; 23 scenarios (1–20 earthquakes
-per window × 5 noise levels, plus earthquakes outside the network). Every earthquake in a window has
+Per network and scenario: 600 train, 120 val and 60 test windows; 38 scenarios: which earthquakes
+(at random, a **sequence** of aftershocks and foreshocks, or outside the network) × how many (1–20)
+× how much noise ([Scenarios](https://bepad.readthedocs.io/en/latest/scenarios.html)). Every earthquake in a window has
 ≥ 4 real P picks on ≥ 3 stations inside it.
 
 | Split | Windows | Networks |
 |---|---|---|
-| train | 2,068,000 | 90 |
-| val | 412,800 | 90 |
-| test | 208,900 | 91 |
+| train | 2,050,470 | 90 |
+| val | 408,876 | 90 |
+| test | 207,197 | 91 |
 
 Networks with fewer than 200 earthquakes are test only (ESPOO, `R06`).
 

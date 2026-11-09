@@ -1,7 +1,7 @@
 """Command line interface.
 
 Users
-    bepad download --split test [--networks tx CM] [--release v0.1]
+    bepad download --split test [--networks tx CM] [--release v0.2]
     bepad evaluate predictions.parquet --release-dir <dir> [--split test] [--out report/]
 
 Associator authors
@@ -15,9 +15,9 @@ Maintainers (building the dataset)
     python -m bepad pool sync [--dry-run]         add every UTDQuake network not in the pool
     python -m bepad pool list
     python -m bepad pool fit-labels [--networks NEW --keep-global]
-    python -m bepad build configs/v0.1.yaml [--networks tx] [--workers N] [--no-finalize] [--release NAME]
-    python -m bepad finalize configs/v0.1.yaml
-    python -m bepad figures configs/v0.1.yaml
+    python -m bepad build configs/v0.2.yaml [--networks tx] [--workers N] [--no-finalize] [--release NAME]
+    python -m bepad finalize configs/v0.2.yaml
+    python -m bepad figures configs/v0.2.yaml
 """
 
 from __future__ import annotations
