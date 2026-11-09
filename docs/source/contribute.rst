@@ -162,8 +162,23 @@ other networks are optional, and each is ranked on its own.
 **My method is slow. Can I submit part of a network?** You can submit it, but it is shown as
 *partial* and not ranked. Rankings compare complete runs only.
 
-**Deep-learning models?** Load your weights in ``__init__``, from ``models/weights/`` (or a
-download link in ``config.yaml`` if they are large), and set ``method_type = "deep learning"``. Train with :doc:`train`.
+**Deep-learning models?** Put the trained weights in your folder, in ``models/weights/``, and load
+them once, in ``__init__`` (``self.path`` is your folder):
+
+.. code-block:: python
+
+   class Associator(bepad.Associator):
+       method_type = "deep learning"
+
+       def __init__(self, **config):
+           super().__init__(**config)
+           self.model = torch.load(self.path / "models/weights/model.pt", weights_only=False)
+
+       def associate(self, picks, stations):
+           ...                                   # run self.model on one window
+
+Weights too large for the folder (over about 100 MB): put a download link in ``config.yaml`` and
+download them in ``__init__``. To train a model on BEPAD: :doc:`train`.
 
 **The test labels are public. Why not hide them?** BEPAD's windows are built from public UTDQuake
 earthquakes, so hiding the labels would not keep them secret, and public labels let you score

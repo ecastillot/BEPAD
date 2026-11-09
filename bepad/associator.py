@@ -28,6 +28,7 @@ from __future__ import annotations
 import datetime as dt
 import importlib.util
 import json
+import sys
 import platform
 import time
 from pathlib import Path
@@ -58,7 +59,7 @@ class Associator:
             raise ValueError("config 'networks' must map a network to its settings, e.g. {tx: {p_velocity: 6.0}}")
         self._base_config = config
         self.network = None          # the network of the current window (set before each associate call)
-        self.path = None             # the associator folder (set by load_associator), for model files
+        self.path = _class_folder(type(self))   # the associator folder, for model files (already in __init__)
         self.config = self.network_config(None)
 
     def network_config(self, network):
@@ -232,6 +233,16 @@ def _num(v):
 
 
 # ----------------------------------------------------------------------
+def _class_folder(cls):
+    """The folder of the file that defines ``cls`` (None for a class typed in a notebook)."""
+    import inspect
+
+    try:
+        return Path(inspect.getfile(cls)).resolve().parent
+    except (TypeError, OSError):
+        return None
+
+
 def load_associator(path, **overrides):
     """Load an associator folder (or .py file): its Associator subclass + config.yaml."""
     import yaml
@@ -240,6 +251,7 @@ def load_associator(path, **overrides):
     file = path / "associator.py" if path.is_dir() else path
     spec = importlib.util.spec_from_file_location(f"bepad_assoc_{file.parent.name}", file)
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod           # so the class knows its file (self.path in __init__)
     spec.loader.exec_module(mod)
     classes = [c for c in vars(mod).values()
                if isinstance(c, type) and issubclass(c, Associator) and c is not Associator]

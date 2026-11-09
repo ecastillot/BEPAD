@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.2.1
+-----
+
+Same data (BEPAD v0.2).
+
+* ``Associator.path`` (the associator's folder) is set before ``__init__`` runs, so model weights
+  can be loaded there (it used to be set only after).
+* Documentation: how to load the weights of a deep-learning associator (*Contribute*).
+
 0.2.0 (BEPAD v0.2)
 ------------------
 
