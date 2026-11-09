@@ -137,7 +137,7 @@ For example, the preview of ``eqt-utils_simple`` starts with its BEPAD-10 row:
    ## v0.2 · BEPAD-10 test (R05, R07, R01, nc, tx, JMA, CM, R09, ak, NOA)
 
    | # | Method               | Type      | Training | Event F1 | Pick F1 | Noise rej. | Merge | Split | Epicentre err. (km) | Depth err. (km) | s/window | Windows | Networks |
-   | 1 | eqt-utils_simple 0.1 | classical | none     | 0.514    | 0.278   | 0.005      | 0.644 | 0.467 | 119.0               | 29.1            | 0.16     | 22680   | 10/10    |
+   | 1 | eqt-utils_simple 0.1 | classical | none     | 0.496    | 0.275   | 0.005      | 0.602 | 0.377 | 117.3               | 29.7            | 0.16     | 22680   | 10/10    |
 
 then one table per network it ran.
 

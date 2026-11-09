@@ -4,34 +4,41 @@ Metrics
 The metrics follow `Puente Huerta et al. (2025), Seismica
 <https://seismica.library.mcgill.ca/article/view/1559>`_.
 
-**Matching.** In each window, true and predicted earthquakes are paired one-to-one to maximise
-shared picks (Hungarian algorithm). A pair counts as a match when it shares at least 3 picks.
-Every true earthquake counts: each one has ≥ 4 real P picks on ≥ 3 stations inside its window.
+**Matching.** Your earthquake numbers are arbitrary, so in each window BEPAD first pairs your
+earthquakes with the true ones: one-to-one, to share as many picks as possible (Hungarian
+algorithm). A pair counts as a **match** when it shares **at least 4 picks on at least 3
+stations**, the same evidence BEPAD asks of an earthquake (each true earthquake has ≥ 4 real P
+picks on ≥ 3 stations in its window). A true earthquake with a match is *found*.
 
 Counts are summed over all windows, then turned into ratios.
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 75
+   :widths: 22 78
 
    * - Metric
      - Definition
    * - Event precision
-     - matched / predicted earthquakes
+     - matched earthquakes / your earthquakes
    * - Event recall
-     - matched / true earthquakes
+     - matched earthquakes / true earthquakes
    * - Pick precision
-     - picks assigned to the right earthquake / picks you assigned to any earthquake
+     - picks in the earthquake matched to their true earthquake / picks you put in any earthquake
    * - Pick recall
-     - picks assigned to the right earthquake / picks of all earthquakes (real and generated)
+     - picks in the earthquake matched to their true earthquake / picks of all true earthquakes
+       (real and generated)
    * - Noise rejection
-     - noise picks left unassociated / all noise picks
+     - noise picks you left unassociated / all noise picks
    * - Split rate
-     - true earthquakes spread over ≥ 2 predicted earthquakes
+     - true earthquakes cut into pieces / true earthquakes. *Cut*: two or more of your earthquakes
+       each hold ≥ 4 of its picks on ≥ 3 stations.
    * - Merge rate
-     - predicted earthquakes that contain ≥ 2 true earthquakes
+     - your earthquakes that glue true ones together / your earthquakes. *Glue*: it holds ≥ 4 picks
+       on ≥ 3 stations from each of two or more true earthquakes.
    * - ARI
-     - adjusted Rand index of the pick grouping, averaged over windows
+     - adjusted Rand index (Hubert & Arabie, 1985) of the pick grouping, averaged over windows. It
+       uses no matching: for every pair of picks, are they together in both groupings, or apart in
+       both? 1 = perfect grouping, 0 = chance.
 
 F1 is 2PR / (P + R). Sanity values: the true labels give 1.0 everywhere; marking every pick as
 noise gives recall 0.

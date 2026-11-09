@@ -6,7 +6,9 @@ prediction table count as -1.
 
 Event matching, per window: a contingency table of shared picks between
 true events and predicted events is solved with the Hungarian algorithm; a
-pair is a match when they share >= ``min_shared`` picks.
+pair is a match when they share >= ``min_shared`` picks (4) on >= ``min_stations``
+stations (3) -- the same evidence BEPAD asks of an earthquake. Split and merge
+count only pieces that pass the same rule.
 
 - Only ``scorable`` true events count for recall (FN).
 - A predicted event counts as FP when it is unmatched, unless most of its
@@ -46,25 +48,39 @@ def _ari(a, b):
     return 1.0 if max_ == expected else float((s_ij - expected) / (max_ - expected))
 
 
-def _score_window(df, scorable, min_shared):
-    true = df["event_idx"].to_numpy()
-    pred = df["pred_event"].to_numpy()
+def match_events(true, pred, station, min_shared=4, min_stations=3):
+    """One window: -> (t_ids, p_ids, cont, ok, match).
 
+    cont[i, j]: picks shared by true event t_ids[i] and predicted event p_ids[j]; ok[i, j]: the pair
+    shares >= min_shared picks on >= min_stations stations; match: {true id: predicted id}, the
+    one-to-one pairing with the most shared picks (Hungarian), keeping only ok pairs."""
     t_ids = np.unique(true[true != NOISE])
     p_ids = np.unique(pred[pred != NOISE])
     cont = np.zeros((len(t_ids), len(p_ids)), dtype=int)
-    if len(t_ids) and len(p_ids):
-        ti = np.searchsorted(t_ids, true)
-        pi = np.searchsorted(p_ids, pred)
-        m = (true != NOISE) & (pred != NOISE)
-        np.add.at(cont, (ti[m], pi[m]), 1)
-
-    match = {}  # true id -> pred id
+    n_sta = np.zeros_like(cont)
+    m = (true != NOISE) & (pred != NOISE)
+    if len(t_ids) and len(p_ids) and m.any():
+        ti = np.searchsorted(t_ids, true[m])
+        pi = np.searchsorted(p_ids, pred[m])
+        np.add.at(cont, (ti, pi), 1)
+        if station is not None:
+            u = pd.DataFrame({"t": ti, "p": pi, "s": np.asarray(station)[m]}).drop_duplicates()
+            np.add.at(n_sta, (u["t"].to_numpy(), u["p"].to_numpy()), 1)
+        else:
+            n_sta = cont                       # no stations given: only the pick rule
+    ok = (cont >= min_shared) & (n_sta >= min_stations)
+    match = {}
     if cont.size:
         r, c = linear_sum_assignment(-cont)
-        for i, j in zip(r, c):
-            if cont[i, j] >= min_shared:
-                match[t_ids[i]] = p_ids[j]
+        match = {t_ids[i]: p_ids[j] for i, j in zip(r, c) if ok[i, j]}
+    return t_ids, p_ids, cont, ok, match
+
+
+def _score_window(df, scorable, min_shared=4, min_stations=3):
+    true = df["event_idx"].to_numpy()
+    pred = df["pred_event"].to_numpy()
+    station = df["station"].to_numpy() if "station" in df else None
+    t_ids, p_ids, cont, ok, match = match_events(true, pred, station, min_shared, min_stations)
     pred_matched = set(match.values())
 
     is_sc = np.array([t in scorable for t in t_ids], dtype=bool)
@@ -81,9 +97,9 @@ def _score_window(df, scorable, min_shared):
             continue  # dominated by a non-scorable event
         fp += 1
 
-    # split / merge, with the same min_shared support
-    split = int(sum(((cont[i] >= min_shared).sum() > 1) for i in range(len(t_ids)) if is_sc[i]))
-    merge = int(sum(((cont[:, j] >= min_shared).sum() > 1) for j in range(len(p_ids))))
+    # split / merge: pieces that pass the same rule as a match
+    split = int(sum((ok[i].sum() > 1) for i in range(len(t_ids)) if is_sc[i]))
+    merge = int(sum((ok[:, j].sum() > 1) for j in range(len(p_ids))))
 
     # pick level (picks of non-scorable events excluded)
     in_sc = np.isin(true, list(scorable))
@@ -108,16 +124,20 @@ def _score_window(df, scorable, min_shared):
     }
 
 
-def score_windows(truth_picks, truth_events, pred, min_shared=3, windows=None):
-    """Return (per_window, summary). ``windows`` (optional) adds grouping columns."""
-    df = truth_picks[["window_id", "pick_idx", "event_idx"]].merge(
+def score_windows(truth_picks, truth_events, pred, min_shared=4, min_stations=3, windows=None):
+    """Return (per_window, summary). ``windows`` (optional) adds grouping columns.
+    ``truth_picks`` needs a ``station`` column when ``min_stations`` > 0."""
+    if min_stations and "station" not in truth_picks:
+        raise ValueError("truth_picks needs a 'station' column for the min_stations rule")
+    cols = ["window_id", "pick_idx", "event_idx"] + (["station"] if "station" in truth_picks else [])
+    df = truth_picks[cols].merge(
         pred[["window_id", "pick_idx", "pred_event"]], on=["window_id", "pick_idx"], how="left")
     df["pred_event"] = df["pred_event"].fillna(NOISE).astype(int)
     scorable = truth_events[truth_events["scorable"]].groupby("window_id")["event_idx"].apply(set).to_dict()
 
     rows, matches = [], []
     for wid, g in df.groupby("window_id", sort=False):
-        r = _score_window(g, scorable.get(wid, set()), min_shared)
+        r = _score_window(g, scorable.get(wid, set()), min_shared, min_stations)
         matches += [(wid, int(t), int(p)) for t, p in r.pop("_match")]
         rows.append({"window_id": wid, **r})
     per_window = pd.DataFrame(rows)
@@ -281,11 +301,13 @@ def check_predictions(pred, truth_picks):
     return {"n_predictions": len(pred), "n_picks": len(truth_picks), "n_missing_picks": n_missing}
 
 
-def evaluate(predictions, release, split="test", networks=None, min_shared=3, window_ids=None, locations=None):
+def evaluate(predictions, release, split="test", networks=None, min_shared=4, min_stations=3, window_ids=None,
+             locations=None):
     """Score ``predictions`` (DataFrame or parquet/csv path) on ``split`` of ``release``
     (a loaded :class:`bepad.data.Split`, a :class:`bepad.data.Release` or a local release folder).
 
-    Picks without a prediction count as noise (-1). ``networks`` limits scoring
+    A predicted event matches a true one when they share >= ``min_shared`` picks on >= ``min_stations``
+    stations (the leaderboard uses the defaults). Picks without a prediction count as noise (-1). ``networks`` limits scoring
     to those networks; ``window_ids`` to those windows (a partial run).
     ``locations`` (optional): one row per predicted event -- window_id, event (its pred_event
     number), latitude, longitude, depth_km, t0_rel_s -- scored against the matched true events.
@@ -305,18 +327,20 @@ def evaluate(predictions, release, split="test", networks=None, min_shared=3, wi
     windows = rel._read(split, "windows", networks)
     if keep is not None:
         windows = windows[windows.window_id.isin(keep)]
-    picks = rel._read(split, "picks", networks, columns=["window_id", "pick_idx", "event_idx"], window_ids=keep)
+    picks = rel._read(split, "picks", networks, columns=["window_id", "pick_idx", "event_idx", "station"],
+                      window_ids=keep)
     events = rel._read(split, "events", networks, columns=["window_id", "event_idx", "scorable", "latitude",
                                                            "longitude", "depth", "t0_rel_s"], window_ids=keep)
     checks = check_predictions(predictions, picks)
     if checks["n_missing_picks"]:
         print(f"[evaluate] warning: {checks['n_missing_picks']} picks have no prediction -> counted as noise")
-    per_window, _, matches = score_windows(picks, events, predictions, min_shared=min_shared, windows=windows)
+    per_window, _, matches = score_windows(picks, events, predictions, min_shared=min_shared,
+                                             min_stations=min_stations, windows=windows)
     loc = None
     if locations is not None:
         if not isinstance(locations, pd.DataFrame):
             locations = pd.read_parquet(locations)
         loc = score_locations(matches, events, locations)
-    meta = {"release": rel.path.name, "split": split, "min_shared": min_shared,
+    meta = {"release": rel.path.name, "split": split, "min_shared": min_shared, "min_stations": min_stations,
             "networks": networks or "all", "n_windows": int(len(windows)), **checks}
     return Report(per_window, meta, loc)

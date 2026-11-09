@@ -347,7 +347,7 @@ def _pick_distance(w, picks):
     return out
 
 
-def plot_prediction(w, predictions, locations=None, min_shared=3, save_path=None, dpi=DPI):
+def plot_prediction(w, predictions, locations=None, min_shared=4, min_stations=3, save_path=None, dpi=DPI):
     """Truth (left) vs an associator's prediction (right) for one window.
 
     ``w`` must be loaded with labels; ``predictions`` has window_id, pick_idx,
@@ -358,9 +358,7 @@ def plot_prediction(w, predictions, locations=None, min_shared=3, save_path=None
     an event pick left unassociated. With ``locations`` (``result.locations``),
     a map adds the true epicentres (stars) joined to the predicted ones (circles).
     """
-    from scipy.optimize import linear_sum_assignment
-
-    from .metrics import _score_window
+    from .metrics import _score_window, match_events
 
     pk = w.picks.merge(predictions[predictions.window_id == w.window_id][["pick_idx", "pred_event"]],
                        on="pick_idx", how="left")
@@ -368,20 +366,13 @@ def plot_prediction(w, predictions, locations=None, min_shared=3, save_path=None
     y = _pick_distance(w, pk)
     true, pred = pk.event_idx.to_numpy(), pk.pred_event.to_numpy()
 
-    t_ids, p_ids = np.unique(true[true >= 0]), np.unique(pred[pred >= 0])
-    cont = np.zeros((len(t_ids), len(p_ids)), int)
-    both = (true >= 0) & (pred >= 0)
-    np.add.at(cont, (np.searchsorted(t_ids, true[both]), np.searchsorted(p_ids, pred[both])), 1)
-    match = {}
-    if cont.size:
-        for i, j in zip(*linear_sum_assignment(-cont)):
-            if cont[i, j] >= min_shared:
-                match[p_ids[j]] = t_ids[i]
+    t_ids, p_ids, _, _, m_ = match_events(true, pred, pk.station.to_numpy(), min_shared, min_stations)
+    match = {p: t for t, p in m_.items()}                                     # predicted -> true
     mapped = np.array([match.get(p, -2) if p >= 0 else -1 for p in pred])      # -2 = unmatched event
     wrong = (mapped != true) & ~((true < 0) & (pred < 0))
 
     scorable = set(w.events.loc[w.events.scorable, "event_idx"])
-    sc = _score_window(pk.rename(columns={}), scorable, min_shared)
+    sc = _score_window(pk, scorable, min_shared, min_stations)
     ev_f1 = 2 * sc["event_tp"] / max(2 * sc["event_tp"] + sc["event_fp"] + sc["event_fn"], 1)
 
     loc = None

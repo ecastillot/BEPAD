@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.2.2
+-----
+
+Same data (BEPAD v0.2). **Scores change.**
+
+* Matching: a predicted earthquake matches a true one when they share **at least 4 picks on at
+  least 3 stations** (was: 3 picks), the same evidence BEPAD asks of an earthquake. Split and merge
+  count only pieces that pass the same rule. ``evaluate(..., min_shared=4, min_stations=3)``;
+  ``bepad evaluate --min-shared --min-stations``.
+* Every leaderboard entry (v0.1 and v0.2) rescored from its stored predictions with the new rule.
+* *Metrics* page: split and merge rates written as rates; what ARI measures.
+
 0.2.1
 -----
 

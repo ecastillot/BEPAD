@@ -43,7 +43,8 @@ def main(argv=None):
     ev.add_argument("--release-dir", required=True, help="local release folder (see `bepad download`)")
     ev.add_argument("--split", default="test")
     ev.add_argument("--networks", nargs="*")
-    ev.add_argument("--min-shared", type=int, default=3)
+    ev.add_argument("--min-shared", type=int, default=4, help="picks a match must share (default 4)")
+    ev.add_argument("--min-stations", type=int, default=3, help="stations those picks must be on (default 3)")
     ev.add_argument("--out", help="folder for the report (csv + summary.json)")
 
     nw = sub.add_parser("new", help="create an associator folder from the template")
@@ -140,7 +141,8 @@ def main(argv=None):
 
     if a.cmd == "evaluate":
         from .metrics import evaluate
-        report = evaluate(a.predictions, a.release_dir, split=a.split, networks=a.networks, min_shared=a.min_shared)
+        report = evaluate(a.predictions, a.release_dir, split=a.split, networks=a.networks, min_shared=a.min_shared,
+                          min_stations=a.min_stations)
         print(report)
         if a.out:
             print(f"[evaluate] report written to {report.save(a.out)}")

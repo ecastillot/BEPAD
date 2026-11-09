@@ -45,10 +45,11 @@ Texas test windows prints:
 .. code-block:: text
 
     event_precision  event_recall  event_f1  pick_precision  pick_recall  pick_f1  noise_rejection  split_rate  merge_rate
-                0.7        0.6875    0.6937          0.4112       0.5448   0.4687           0.0056      0.7768      0.5364
+                0.7        0.6875    0.6937          0.4112       0.5448   0.4687           0.0056      0.6607      0.4727
 
-It finds 69 % of the earthquakes, but splits 78 % of them and merges 54 %, and it puts almost every
-noise pick into an earthquake (noise rejection 0.006): fixed 15 s windows cannot separate earthquakes that
+It finds 69 % of the earthquakes, but cuts 66 % of them into pieces (split rate), 47 % of its
+earthquakes glue real ones together (merge rate), and it puts almost every noise pick into an
+earthquake (noise rejection 0.006): fixed 15 s windows cannot separate earthquakes that
 overlap. The figures below show how to see such errors window by window.
 
 ``max_windows=20`` runs 20 windows per network, for a quick try; leave it out to run every window.
