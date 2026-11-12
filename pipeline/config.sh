@@ -11,8 +11,8 @@ CPU_PARTITION=normal
 
 # UTDQuake 1.0, local copy of the Hugging Face dataset (main = commit 8524c6f0: v1 + v2 networks, one schema,
 # JAPAN renamed JMA)
-export UTDQUAKE_ROOT=${UTDQUAKE_ROOT:-/groups/igonin/ecastillo/UTDQuake_v2}
-export UTDQUAKE_DAS_ROOT=${UTDQUAKE_DAS_ROOT:-$UTDQUAKE_ROOT}
+export UTDQUAKE_ROOT=${UTDQUAKE_ROOT:-/groups/igonin/ecastillo/UTDQuake}
+export UTDQUAKE_DAS_ROOT=${UTDQUAKE_DAS_ROOT:-/groups/igonin/ecastillo/UTDQuake_DAS}
 export UTDQUAKE_REVISION=${UTDQUAKE_REVISION:-8524c6f0c7cea7405670dab99967aa73b6a30775}
 
 source "$CONDA_SH"
